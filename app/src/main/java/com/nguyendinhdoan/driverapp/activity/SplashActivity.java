@@ -1,9 +1,11 @@
-package com.nguyendinhdoan.driverapp;
+package com.nguyendinhdoan.driverapp.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+
+import com.nguyendinhdoan.driverapp.activity.LoginActivity;
 
 public class SplashActivity extends AppCompatActivity {
 
