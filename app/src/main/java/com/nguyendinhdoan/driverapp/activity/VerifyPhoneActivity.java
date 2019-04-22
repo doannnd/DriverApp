@@ -21,6 +21,7 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.google.android.gms.common.internal.service.Common;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseException;
@@ -30,6 +31,7 @@ import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthProvider;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.model.Driver;
+import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -185,6 +187,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.verification_code_button) {
+            CommonUtils.hideKeyboard(this);
             verifyCodeAndLoginWithCredential();
         }
     }
@@ -192,7 +195,9 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         if (actionId == EditorInfo.IME_ACTION_DONE) {
+            CommonUtils.hideKeyboard(this);
             verifyCodeAndLoginWithCredential();
+            return true;
         }
         return false;
     }
@@ -201,6 +206,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
         String code = codeEditText.getText().toString();
         if (TextUtils.isEmpty(code) || code.length() < 6) {
             showSnackBar(getString(R.string.error_code));
+            codeEditText.requestFocus();
             return;
         }
 
@@ -217,7 +223,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         progressBar.setVisibility(View.INVISIBLE);
                         if (task.isSuccessful()) {
-
+                            launchDriverScreen();
                            // saveDriverInDatabase(driver);
                         } else {
                             Log.e(TAG, "error: " + task.getException());
@@ -229,6 +235,13 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
 
     private void saveDriverInDatabase(Driver driver) {
 
+    }
+
+    private void launchDriverScreen() {
+        Intent intentDriver = DriverActivity.start(this);
+        intentDriver.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intentDriver);
+        finish();
     }
 
 }
