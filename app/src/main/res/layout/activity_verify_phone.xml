@@ -42,12 +42,12 @@
 
 
     <TextView
-        android:id="@+id/request_code_text_view"
+        android:id="@+id/time_out_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="16dp"
-        android:text="@string/request_new_code_text"
+        android:text="@string/time_out_text"
         android:textColor="@android:color/black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -60,7 +60,7 @@
         android:layout_marginBottom="8dp"
         android:text="@string/receive_text_view"
         android:textColor="@android:color/black"
-        app:layout_constraintBottom_toTopOf="@+id/request_code_text_view"
+        app:layout_constraintBottom_toTopOf="@+id/time_out_text_view"
         app:layout_constraintStart_toStartOf="parent" />
 
     <EditText
@@ -83,6 +83,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/phone_text_view"
         tools:ignore="Autofill" />
+
+    <Button
+        android:id="@+id/verification_code_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_button_login"
+        android:text="@string/verification_code_button_text"
+        android:textColor="@android:color/white"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/code_edit_text"/>
 
     <ProgressBar
         android:id="@+id/progress_bar"
