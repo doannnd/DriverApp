@@ -2,12 +2,12 @@ package com.nguyendinhdoan.driverapp.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.TextUtils;
@@ -21,14 +21,16 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.google.android.gms.common.internal.service.Common;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthProvider;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.model.Driver;
 import com.nguyendinhdoan.driverapp.utils.CommonUtils;
@@ -40,9 +42,12 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
         View.OnClickListener, TextView.OnEditorActionListener {
 
     public static final String TAG = "PHONE_ACTIVITY";
+    public static final String DRIVER_TABLE_NAME = "drivers";
+
     public static final long INITIAL_COUNT_DOWN = 60000L; // 60s
     public static final long COUNT_DOWN_INTERVAL = 1000L; // 1s
     public static final long VERIFICATION_CODE_TIME_OUT = 60L; // 60s
+
 
     private ConstraintLayout rootLayout;
     private Toolbar toolbar;
@@ -52,6 +57,8 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
     private Button verificationCodeButton;
     private ProgressBar progressBar;
 
+    private FirebaseAuth driverAuth;
+    private DatabaseReference driverTable;
     private CountDownTimer countDownTimer;
     private String verificationId;
     private Driver driver;
@@ -85,6 +92,12 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
         setupTimeOut();
         displayPhoneNumber();
         sendVerificationCode();
+        initFirebase();
+    }
+
+    private void initFirebase() {
+        driverTable = FirebaseDatabase.getInstance().getReference(DRIVER_TABLE_NAME);
+        driverAuth = FirebaseAuth.getInstance();
     }
 
     private void setupToolbar() {
@@ -223,8 +236,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         progressBar.setVisibility(View.INVISIBLE);
                         if (task.isSuccessful()) {
-                            launchDriverScreen();
-                           // saveDriverInDatabase(driver);
+                           saveDriverInDatabase(driver);
                         } else {
                             Log.e(TAG, "error: " + task.getException());
                             showSnackBar(Objects.requireNonNull(task.getException()).getMessage());
@@ -234,6 +246,24 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
     }
 
     private void saveDriverInDatabase(Driver driver) {
+        FirebaseUser user = driverAuth.getCurrentUser();
+        // check user exist
+        if (user != null) {
+            String driverId = user.getUid();
+            driverTable.child(driverId)
+                    .setValue(driver)
+                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful()) { // if save driver in database success
+                                // jump into driver screen
+                                launchDriverScreen();
+                            } else {
+                                Log.e(TAG, "error save driver in database: " + task.getException());
+                            }
+                        }
+                    });
+        }
 
     }
 

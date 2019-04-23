@@ -9,11 +9,9 @@ import android.util.Patterns;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
-import java.util.regex.Pattern;
-
 public class CommonUtils {
 
-    public static final int HIDE_KEYBOARD_FLAGS = 0;
+    private static final int HIDE_KEYBOARD_FLAGS = 0;
 
     public static void hideKeyboard(Activity activity) {
         InputMethodManager manager = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
