@@ -1,0 +1,49 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "com.nguyendinhdoan.driverapp"
+        minSdkVersion 19
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    // google support library
+    implementation "com.android.support:appcompat-v7:$support_library"
+    implementation "com.android.support:design:$support_library"
+    implementation "com.android.support:support-media-compat:$support_library"
+    implementation "com.android.support:support-v4:$support_library"
+    implementation "com.android.support.constraint:constraint-layout:$constaint_layout"
+    // firebase library
+    implementation "com.google.firebase:firebase-core:$firebase_core"
+    implementation "com.google.firebase:firebase-auth:$firebase_auth"
+    implementation "com.google.firebase:firebase-database:$firebase_database"
+    // google play services
+    implementation "com.google.android.gms:play-services-maps:$play_services_maps"
+    implementation "com.google.android.gms:play-services-location:$play_services_location"
+    implementation 'com.google.android.libraries.places:places:1.1.0'
+    // retrofit
+    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
+    implementation "com.squareup.retrofit2:converter-scalars:$retrofit_version"
+    // dexter
+    implementation 'com.karumi:dexter:5.0.0'
+    implementation 'com.firebase:geofire-android:2.3.1'
+    implementation 'com.google.maps.android:android-maps-utils:0.5'
+    // testing
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
