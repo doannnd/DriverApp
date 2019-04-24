@@ -2,22 +2,24 @@ package com.nguyendinhdoan.driverapp.activity;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -26,6 +28,7 @@ import android.widget.TextView;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -45,6 +48,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.SquareCap;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.Autocomplete;
+import com.google.android.libraries.places.widget.AutocompleteActivity;
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
@@ -65,7 +73,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -73,7 +83,7 @@ import retrofit2.Response;
 
 public class DriverActivity extends FragmentActivity
         implements OnMapReadyCallback,
-        CompoundButton.OnCheckedChangeListener, View.OnClickListener {
+        CompoundButton.OnCheckedChangeListener, View.OnTouchListener {
 
     public static final String TAG = "DRIVER_ACTIVITY";
     public static final String DRIVER_LOCATION_TABLE_NAME = "driver_location";
@@ -90,10 +100,10 @@ public class DriverActivity extends FragmentActivity
     private static final float POLYLINE_WIDTH = 5F;
     private static final long DIRECTION_ANIMATE_DURATION = 3000L;
     private static final long DRAW_PATH_TIME_OUT = 3000L;
+    private static final int AUTOCOMPLETE_REQUEST_CODE = 9000;
 
     private Switch stateDriverSwitch;
     private EditText destinationEditText;
-    private Button goButton;
     private ProgressBar driverProgressBar;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
@@ -130,17 +140,61 @@ public class DriverActivity extends FragmentActivity
         initViews();
         setupUI();
         addEvents();
+        //autoCompletePlaces();
     }
 
+    private void autoCompletePlaces() {
+        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS);
+
+        // Start the autocomplete intent.
+        Intent intent = new Autocomplete.IntentBuilder(
+                AutocompleteActivityMode.FULLSCREEN, fields)
+                .build(this);
+        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+
+                if (stateDriverSwitch.isChecked()) { // if driver online --> working
+
+                    Place place = Autocomplete.getPlaceFromIntent(data);
+                    String destination = place.getAddress();
+                    Log.d(TAG, "place id: " + place.getId() + " place address: " + place.getAddress());
+
+                    if (destination != null) {
+                        destinationEditText.setText(destination);
+                        String destinationFormatted = destination.replace(" ", "+");
+                        // handle direction with destination formatted
+                        handleDriverDirection(destinationFormatted);
+                    }
+
+                } else {
+                    showSnackBar(getString(R.string.please_change_state_you));
+                }
+
+            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
+                Status status = Autocomplete.getStatusFromIntent(Objects.requireNonNull(data));
+                Log.d(TAG, status.getStatusMessage());
+            } else if (resultCode == RESULT_CANCELED) {
+                // The user canceled the operation.
+                showSnackBar(getString(R.string.user_cancel_operation));
+            }
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     private void addEvents() {
         stateDriverSwitch.setOnCheckedChangeListener(this);
-        goButton.setOnClickListener(this);
+        destinationEditText.setOnTouchListener(this);
     }
 
     private void initViews() {
         stateDriverSwitch = findViewById(R.id.state_driver_switch);
         destinationEditText = findViewById(R.id.destination_edit_text);
-        goButton = findViewById(R.id.go_button);
         driverProgressBar = findViewById(R.id.driver_progress_bar);
     }
 
@@ -149,7 +203,12 @@ public class DriverActivity extends FragmentActivity
         setupLocation();
         setupFirebase();
         setupRetrofit();
+        setupPlacesAPI();
         init();
+    }
+
+    private void setupPlacesAPI() {
+        Places.initialize(this, getString(R.string.google_api_key));
     }
 
     private void init() {
@@ -337,19 +396,6 @@ public class DriverActivity extends FragmentActivity
         snackbar.show();
     }
 
-    @Override
-    public void onClick(View v) {
-        if (stateDriverSwitch.isChecked()) {
-            if (v.getId() == R.id.go_button) {
-                String destination = destinationEditText.getText().toString();
-                String destinationFormatted = destination.replace(" ", "+");
-                Log.d(TAG, "destination formatted: " + destinationFormatted);
-
-                handleDriverDirection(destinationFormatted);
-            }
-        }
-    }
-
     private void handleDriverDirection(String destinationFormatted) {
         // save current position
         double currentLatitude = lastLocation.getLatitude();
@@ -533,7 +579,7 @@ public class DriverActivity extends FragmentActivity
             return (float) (Math.toDegrees(Math.atan(lng / lat)));
         } else if (startPosition.latitude >= endPosition.latitude &&
                 startPosition.longitude < endPosition.longitude) {
-            return (float) ( (90 - Math.toDegrees(Math.atan(lng / lat))) + 90);
+            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 90);
         } else if (startPosition.latitude >= endPosition.latitude &&
                 startPosition.longitude >= endPosition.longitude) {
             return (float) (Math.toDegrees(Math.atan(lng / lat)) + 180);
@@ -544,4 +590,20 @@ public class DriverActivity extends FragmentActivity
         return -1;
     }
 
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN: {
+                autoCompletePlaces();
+                break;
+            }
+            case MotionEvent.ACTION_UP: {
+                v.performClick();
+                break;
+            }
+            default:
+                break;
+        }
+        return true;
+    }
 }
