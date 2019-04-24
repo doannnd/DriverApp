@@ -1,11 +1,13 @@
 package com.nguyendinhdoan.driverapp.activity;
 
 import android.Manifest;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -14,9 +16,11 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -32,6 +36,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -83,10 +88,13 @@ public class DriverActivity extends FragmentActivity
     public static final String DIRECTION_POINT_KEY = "points";
     public static final int DIRECTION_PADDING = 100;
     private static final float POLYLINE_WIDTH = 5F;
+    private static final long DIRECTION_ANIMATE_DURATION = 3000L;
+    private static final long DRAW_PATH_TIME_OUT = 3000L;
 
     private Switch stateDriverSwitch;
     private EditText destinationEditText;
     private Button goButton;
+    private ProgressBar driverProgressBar;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
@@ -98,10 +106,17 @@ public class DriverActivity extends FragmentActivity
     private Marker driverMarker;
 
     private LatLng currentPosition;
+    private LatLng startPosition;
+    private LatLng endPosition;
     private IGoogleAPI mServices;
     private List<LatLng> directionPolylineList;
     private Polyline grayPolyline;
     private Polyline blackPolyline;
+    private Handler handler;
+    private Marker carMarker;
+
+    private int index = -1;
+    private int next = 1;
 
     public static Intent start(Context context) {
         return new Intent(context, DriverActivity.class);
@@ -126,6 +141,7 @@ public class DriverActivity extends FragmentActivity
         stateDriverSwitch = findViewById(R.id.state_driver_switch);
         destinationEditText = findViewById(R.id.destination_edit_text);
         goButton = findViewById(R.id.go_button);
+        driverProgressBar = findViewById(R.id.driver_progress_bar);
     }
 
     private void setupUI() {
@@ -253,6 +269,9 @@ public class DriverActivity extends FragmentActivity
         driverMap.moveCamera(
                 CameraUpdateFactory.newLatLngZoom(new LatLng(driverLatitude, driverLongitude), DRIVER_MAP_ZOOM)
         );
+
+        // hide progress bar complete display current location
+        driverProgressBar.setVisibility(View.INVISIBLE);
     }
 
 
@@ -276,11 +295,15 @@ public class DriverActivity extends FragmentActivity
     public void onMapReady(GoogleMap googleMap) {
         driverMap = googleMap;
 
+        setupMap();
+    }
+
+    private void setupMap() {
         driverMap.setTrafficEnabled(false);
         driverMap.setBuildingsEnabled(false);
         driverMap.setIndoorEnabled(false);
-        driverMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         driverMap.getUiSettings().setZoomControlsEnabled(true);
+        driverMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
     }
 
 
@@ -288,10 +311,16 @@ public class DriverActivity extends FragmentActivity
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         if (isChecked) {
             showSnackBar(getString(R.string.you_are_online));
+            driverProgressBar.setVisibility(View.VISIBLE);
             startLocationUpdates();
         } else {
             showSnackBar(getString(R.string.you_are_offline));
             stopLocationUpdates();
+            // clear
+            driverMap.clear();
+            if (handler != null) {
+                handler.removeCallbacks(drawPathRunnable);
+            }
             // if marker exist --> delete
             if (driverMarker != null) {
                 driverMarker.remove();
@@ -336,12 +365,12 @@ public class DriverActivity extends FragmentActivity
             mServices.getDirectionPath(directionURL)
                     .enqueue(new Callback<String>() {
                         @Override
-                        public void onResponse(@NonNull  Call<String> call, @NonNull Response<String> response) {
+                        public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
                             handleDirectionJSON(response.body());
                         }
 
                         @Override
-                        public void onFailure(@NonNull  Call<String> call,@NonNull Throwable t) {
+                        public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
                             Log.e(TAG, "error in show direction of driver: " + t.getMessage());
                             showSnackBar(t.getMessage());
                         }
@@ -358,6 +387,7 @@ public class DriverActivity extends FragmentActivity
             JSONObject root = new JSONObject(directionJSON);
             JSONArray routes = root.getJSONArray(DIRECTION_ROUTES_KEY);
 
+            // handle and decode direction json ==> string
             for (int i = 0; i < routes.length(); i++) {
                 JSONObject route = routes.getJSONObject(i);
                 JSONObject overviewPolyline = route.getJSONObject(DIRECTION_POLYLINE_KEY);
@@ -374,6 +404,7 @@ public class DriverActivity extends FragmentActivity
     }
 
     private void showDirectionOnMap(List<LatLng> directionPolylineList) {
+
         // adjusting bound
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
         for (LatLng latLng : directionPolylineList) {
@@ -394,9 +425,123 @@ public class DriverActivity extends FragmentActivity
         grayPolylineOptions.jointType(JointType.ROUND);
         grayPolylineOptions.addAll(directionPolylineList);
 
-        // display on google map
+        // display black polyline overlay gray polyline on google map
         grayPolyline = driverMap.addPolyline(grayPolylineOptions);
+
+        PolylineOptions blackPolylineOptions = new PolylineOptions();
+        blackPolylineOptions.color(Color.BLACK);
+        blackPolylineOptions.width(POLYLINE_WIDTH);
+        blackPolylineOptions.startCap(new SquareCap());
+        blackPolylineOptions.endCap(new SquareCap());
+        blackPolylineOptions.jointType(JointType.ROUND);
+
+        // display black polyline on map
+        blackPolyline = driverMap.addPolyline(blackPolylineOptions);
+
+        // display default marker at destination position
+        int destinationPosition = directionPolylineList.size() - 1;
+        driverMap.addMarker(new MarkerOptions()
+                .position(directionPolylineList.get(destinationPosition))
+                .title(getString(R.string.pickup_location))
+        );
+
+        animateDirectionPolyline();
     }
 
+    private void animateDirectionPolyline() {
+        // animation polyline
+        ValueAnimator polyLineAnimator = ValueAnimator.ofInt(0, 100);
+        polyLineAnimator.setDuration(DIRECTION_ANIMATE_DURATION);
+        polyLineAnimator.setInterpolator(new LinearInterpolator());
+       /* polyLineAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        polyLineAnimator.setRepeatMode(ValueAnimator.RESTART);*/
+        polyLineAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                List<LatLng> points = grayPolyline.getPoints();
+                int percentValue = (int) valueAnimator.getAnimatedValue();
+                int size = points.size();
+                int newPoints = (int) (size * (percentValue / 100.0f));
+                List<LatLng> p = points.subList(0, newPoints);
+                blackPolyline.setPoints(p);
+            }
+        });
+        polyLineAnimator.start();
+
+        // add marker animate on direction polyline
+        carMarker = driverMap.addMarker(
+                new MarkerOptions().position(currentPosition)
+                        .flat(true)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
+        );
+
+        // show detail animate direction polyline
+        displayDetailDirectionPolyline();
+    }
+
+    private void displayDetailDirectionPolyline() {
+        handler = new Handler();
+        handler.postDelayed(drawPathRunnable, DRAW_PATH_TIME_OUT);
+    }
+
+    Runnable drawPathRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (index < directionPolylineList.size() - 1) {
+                index++;
+                next = index + 1;
+            }
+
+            if (index < directionPolylineList.size() - 1) {
+                startPosition = directionPolylineList.get(index);
+                endPosition = directionPolylineList.get(next);
+            }
+
+            ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1);
+            valueAnimator.setDuration(3000);
+            valueAnimator.setInterpolator(new LinearInterpolator());
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    float v = animation.getAnimatedFraction();
+                    double lng = v * endPosition.longitude + (1 - v) * startPosition.longitude;
+                    double lat = v * endPosition.latitude + (1 - v) * startPosition.latitude;
+                    LatLng newPos = new LatLng(lat, lng);
+                    carMarker.setPosition(newPos);
+                    carMarker.setAnchor(0.5f, 0.5f);
+                    carMarker.setRotation(getBearing(startPosition, newPos));
+
+                    driverMap.moveCamera(CameraUpdateFactory.newCameraPosition(
+                            new CameraPosition.Builder()
+                                    .target(newPos)
+                                    .zoom(DRIVER_MAP_ZOOM)
+                                    .build()
+                    ));
+                }
+            });
+            valueAnimator.start();
+            handler.postDelayed(this, 3000);
+        }
+    };
+
+    private float getBearing(LatLng startPosition, LatLng endPosition) {
+        double lat = Math.abs(startPosition.latitude - endPosition.latitude);
+        double lng = Math.abs(startPosition.longitude - endPosition.longitude);
+
+        if (startPosition.latitude < endPosition.latitude &&
+                startPosition.longitude < endPosition.longitude) {
+            return (float) (Math.toDegrees(Math.atan(lng / lat)));
+        } else if (startPosition.latitude >= endPosition.latitude &&
+                startPosition.longitude < endPosition.longitude) {
+            return (float) ( (90 - Math.toDegrees(Math.atan(lng / lat))) + 90);
+        } else if (startPosition.latitude >= endPosition.latitude &&
+                startPosition.longitude >= endPosition.longitude) {
+            return (float) (Math.toDegrees(Math.atan(lng / lat)) + 180);
+        } else if (startPosition.latitude < endPosition.latitude &&
+                startPosition.longitude >= endPosition.longitude) {
+            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 270);
+        }
+        return -1;
+    }
 
 }
