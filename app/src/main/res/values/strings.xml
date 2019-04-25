@@ -35,7 +35,7 @@
     <string name="you_are_online">You are online</string>
     <string name="you_are_offline">You are offline</string>
     <string name="go_button_text">Go</string>
-    <string name="hint_destination">go...</string>
+    <string name="hint_destination">Go…</string>
     <string name="pickup_location">Pickup location</string>
     <string name="user_cancel_operation">you cancel search destination address</string>
     <string name="please_change_state_you">Please change your status to online</string>
