@@ -17,6 +17,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
@@ -162,8 +163,9 @@ public class DriverActivity extends FragmentActivity
                 if (stateDriverSwitch.isChecked()) { // if driver online --> working
 
                     Place place = Autocomplete.getPlaceFromIntent(data);
-                    String destination = place.getAddress();
-                    Log.d(TAG, "place id: " + place.getId() + " place address: " + place.getAddress());
+                    String destination = place.getName();
+                    Log.d(TAG," place address: " + place.getAddress());
+                    Log.d(TAG, "place name: " + place.getName());
 
                     if (destination != null) {
                         destinationEditText.setText(destination);
@@ -361,7 +363,6 @@ public class DriverActivity extends FragmentActivity
         driverMap.setTrafficEnabled(false);
         driverMap.setBuildingsEnabled(false);
         driverMap.setIndoorEnabled(false);
-        driverMap.getUiSettings().setZoomControlsEnabled(true);
         driverMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
     }
 

@@ -81,10 +81,12 @@
             android:background="@null"
             android:drawableStart="@drawable/ic_go_location"
             android:hint="@string/hint_destination"
-            android:imeOptions="actionSearch"
             android:inputType="text"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textColorHint="@android:color/darker_gray"
             android:textSize="14sp"
+            android:textStyle="bold"
             tools:ignore="Autofill" />
 
     </android.support.v7.widget.CardView>
