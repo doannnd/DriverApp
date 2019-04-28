@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,7 +16,6 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
@@ -49,6 +47,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.SquareCap;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.Autocomplete;
@@ -59,6 +60,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
 import com.google.maps.android.PolyUtil;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
@@ -67,7 +70,9 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.model.Token;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
+import com.nguyendinhdoan.driverapp.services.TokenService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -112,7 +117,6 @@ public class DriverActivity extends FragmentActivity
     private LocationRequest locationRequest;
     private FirebaseAuth driverAuth;
     private GoogleMap driverMap;
-    private Location lastLocation;
     private GeoFire driverGeoFire;
     private Marker driverMarker;
 
@@ -145,7 +149,7 @@ public class DriverActivity extends FragmentActivity
     }
 
     private void autoCompletePlaces() {
-        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS);
+        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG);
 
         // Start the autocomplete intent.
         Intent intent = new Autocomplete.IntentBuilder(
@@ -164,14 +168,14 @@ public class DriverActivity extends FragmentActivity
 
                     Place place = Autocomplete.getPlaceFromIntent(data);
                     String destination = place.getName();
+                    LatLng destinationLocation = place.getLatLng();
                     Log.d(TAG," place address: " + place.getAddress());
                     Log.d(TAG, "place name: " + place.getName());
 
-                    if (destination != null) {
+                    if (destinationLocation != null) {
                         destinationEditText.setText(destination);
-                        String destinationFormatted = destination.replace(" ", "+");
                         // handle direction with destination formatted
-                        handleDriverDirection(destinationFormatted);
+                        handleDriverDirection(destinationLocation);
                     }
 
                 } else {
@@ -207,7 +211,37 @@ public class DriverActivity extends FragmentActivity
         setupRetrofit();
         setupPlacesAPI();
         init();
+        updateTokenToDatabase();
     }
+
+    private void updateTokenToDatabase() {
+        final DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(TokenService.TOKEN_TABLE_NAME);
+
+        FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
+            @Override
+            public void onSuccess(InstanceIdResult instanceIdResult) {
+                String newToken = instanceIdResult.getToken();
+                Token token = new Token(newToken);
+
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null) {
+                    String userId = user.getUid();
+                    tokenTable.child(userId).setValue(token)
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if (task.isSuccessful()) {
+                                        Log.d(TAG, "update token at [UserActivity] success ");
+                                    } else {
+                                        Log.e(TAG, "update new token at [UserActivity] failed ");
+                                    }
+                                }
+                            });
+                }
+            }
+        });
+    }
+
 
     private void setupPlacesAPI() {
         Places.initialize(this, getString(R.string.google_api_key));
@@ -275,9 +309,9 @@ public class DriverActivity extends FragmentActivity
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 super.onLocationResult(locationResult);
-                lastLocation = locationResult.getLastLocation();
-                Log.d(TAG, "current location latitude: " + lastLocation.getLatitude());
-                Log.d(TAG, "current location longitude: " + lastLocation.getLongitude());
+                Common.currentLocation = locationResult.getLastLocation();
+                Log.d(TAG, "current location latitude: " + Common.currentLocation.getLatitude());
+                Log.d(TAG, "current location longitude: " + Common.currentLocation.getLongitude());
 
                 // display current location on the google map
                 displayCurrentLocation();
@@ -287,14 +321,14 @@ public class DriverActivity extends FragmentActivity
     }
 
     private void displayCurrentLocation() {
-        if (lastLocation != null && stateDriverSwitch.isChecked()) {
+        if (Common.currentLocation != null && stateDriverSwitch.isChecked()) {
 
             // get information save in driver_location table on firebase
             FirebaseUser user = driverAuth.getCurrentUser();
             if (user != null) {
                 String driverId = user.getUid();
-                final double driverLatitude = lastLocation.getLatitude();
-                final double driverLongitude = lastLocation.getLongitude();
+                final double driverLatitude = Common.currentLocation.getLatitude();
+                final double driverLongitude = Common.currentLocation.getLongitude();
 
                 // save location of driver in realtime database and update location on google map
                 driverGeoFire.setLocation(driverId, new GeoLocation(driverLatitude, driverLongitude),
@@ -397,15 +431,15 @@ public class DriverActivity extends FragmentActivity
         snackbar.show();
     }
 
-    private void handleDriverDirection(String destinationFormatted) {
+    private void handleDriverDirection(LatLng destinationLocaiton) {
         // save current position
-        double currentLatitude = lastLocation.getLatitude();
-        double currentLongitude = lastLocation.getLongitude();
+        double currentLatitude = Common.currentLocation.getLatitude();
+        double currentLongitude = Common.currentLocation.getLongitude();
         currentPosition = new LatLng(currentLatitude, currentLongitude);
 
         try {
             //building direction url for driver
-            String directionURL = Common.directionURL(currentPosition, destinationFormatted);
+            String directionURL = Common.directionURL(currentPosition, destinationLocaiton);
             Log.d(TAG, "direction url: " + directionURL);
 
             // show direction
