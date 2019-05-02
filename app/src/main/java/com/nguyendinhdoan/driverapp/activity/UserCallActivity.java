@@ -2,22 +2,18 @@ package com.nguyendinhdoan.driverapp.activity;
 
 import android.content.Intent;
 import android.media.MediaPlayer;
-import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.FirebaseMessagingService;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
-import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
-import com.nguyendinhdoan.driverapp.services.MessagingService;
+import com.nguyendinhdoan.driverapp.services.MyFirebaseMessaging;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -56,12 +52,6 @@ public class UserCallActivity extends AppCompatActivity {
         setupUI();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mediaPlayer.start();
-    }
-
     private void setupUI() {
         initGoogleService();
         setupMediaPlayer();
@@ -71,8 +61,8 @@ public class UserCallActivity extends AppCompatActivity {
     private void displayCallData() {
         Intent intentCallDriver = getIntent();
         if (intentCallDriver != null) {
-            double latitudeUser = intentCallDriver.getDoubleExtra(MessagingService.LATITUDE_KEY, LATITUDE_DEFAULT);
-            double longitudeUser = intentCallDriver.getDoubleExtra(MessagingService.LONGITUDE_KEY, LONGITUDE_DEFAULT);
+            double latitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LATITUDE_KEY, LATITUDE_DEFAULT);
+            double longitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LONGITUDE_KEY, LONGITUDE_DEFAULT);
             Log.d(TAG, "latitude user: " + latitudeUser);
             Log.d(TAG, "longitude user: " + longitudeUser);
 
@@ -109,10 +99,9 @@ public class UserCallActivity extends AppCompatActivity {
 
 
                                 // get address and display on address text view
-                                JSONObject address = legObject.getJSONObject(DIRECTION_ADDRESS_KEY);
-                                addressTextView.setText(address.getString(DIRECTION_TEXT_KEY));
-                                Log.d(TAG, "address: " + address.getString(DIRECTION_TEXT_KEY));
-
+                                String address = legObject.getString(DIRECTION_ADDRESS_KEY);
+                                addressTextView.setText(address);
+                                Log.d(TAG, "address: " + address);
 
 
                             } catch (JSONException e) {
@@ -158,5 +147,11 @@ public class UserCallActivity extends AppCompatActivity {
     protected void onStop() {
         mediaPlayer.release();
         super.onStop();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //mediaPlayer.start();
     }
 }

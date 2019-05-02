@@ -87,7 +87,8 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/phone_text_view"
-            tools:ignore="Autofill" />
+            tools:ignore="Autofill"
+            android:text="123456"/>
 
         <Button
             android:id="@+id/verification_code_button"

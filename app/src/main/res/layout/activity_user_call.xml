@@ -13,13 +13,9 @@
         android:layout_height="200dp"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="100dp"
-        android:adjustViewBounds="true"
-        android:contentDescription="@string/map_image_view"
-        android:scaleType="fitCenter"
         android:src="@drawable/map"
         app:civ_border_color="@android:color/holo_green_dark"
         app:civ_border_width="5dp" />
-
 
     <TextView
         android:id="@+id/time_text_view"

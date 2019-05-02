@@ -72,7 +72,7 @@ import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
 import com.nguyendinhdoan.driverapp.model.Token;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
-import com.nguyendinhdoan.driverapp.services.TokenService;
+import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -215,7 +215,7 @@ public class DriverActivity extends FragmentActivity
     }
 
     private void updateTokenToDatabase() {
-        final DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(TokenService.TOKEN_TABLE_NAME);
+        final DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
 
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(new OnSuccessListener<InstanceIdResult>() {
             @Override
@@ -231,9 +231,9 @@ public class DriverActivity extends FragmentActivity
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
                                     if (task.isSuccessful()) {
-                                        Log.d(TAG, "update token at [UserActivity] success ");
+                                        Log.d(TAG, "update token at [DriverActivity] success ");
                                     } else {
-                                        Log.e(TAG, "update new token at [UserActivity] failed ");
+                                        Log.e(TAG, "update new token at [DriverActivity] failed ");
                                     }
                                 }
                             });

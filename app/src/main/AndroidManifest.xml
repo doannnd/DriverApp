@@ -41,15 +41,16 @@
             android:screenOrientation="portrait" />
 
         <activity android:name=".activity.UserCallActivity"
-            android:screenOrientation="portrait"/>
+            android:screenOrientation="portrait">
+        </activity>
 
-        <service android:name=".services.TokenService">
+        <service android:name=".services.MyFirebaseIdServices">
             <intent-filter>
                 <action android:name="com.google.firebase.INSTANCE_ID_EVENT" />
             </intent-filter>
         </service>
 
-        <service android:name=".services.MessagingService">
+        <service android:name=".services.MyFirebaseMessaging">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

@@ -9,8 +9,9 @@
     <string name="code_vn">+84</string>
     <string name="test_name">doannd</string>
     <string name="test_email">nguyendinhdoanjdk@gmail.com</string>
-    <string name="test_phone">0395616595</string>
+    <string name="test_phone">0962539727</string>
     <string name="empty_name">name is required</string>
+
     <string name="email_invalid">email is invalid</string>
     <string name="phone_invalid">phone is invalid</string>
     <string name="instruction_text_view">Enter 6 digit code sent to</string>

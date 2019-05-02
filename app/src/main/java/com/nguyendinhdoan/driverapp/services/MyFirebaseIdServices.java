@@ -16,7 +16,7 @@ import com.nguyendinhdoan.driverapp.model.Token;
  *
 *  update token to database
 * */
-public class TokenService extends FirebaseMessagingService {
+public class MyFirebaseIdServices extends FirebaseMessagingService {
     public static final String TAG = "TOKEN_SERVICE";
     public static final String TOKEN_TABLE_NAME = "tokens";
 
