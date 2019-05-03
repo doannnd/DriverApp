@@ -464,7 +464,7 @@ public class DriverActivity extends FragmentActivity
         snackbar.show();
     }
 
-    private void handleDriverDirection(LatLng destinationLocaiton) {
+    private void handleDriverDirection(LatLng destinationLocation) {
         // save current position
         double currentLatitude = Common.currentLocation.getLatitude();
         double currentLongitude = Common.currentLocation.getLongitude();
@@ -472,7 +472,7 @@ public class DriverActivity extends FragmentActivity
 
         try {
             //building direction url for driver
-            String directionURL = Common.directionURL(currentPosition, destinationLocaiton);
+            String directionURL = Common.directionURL(currentPosition, destinationLocation);
             Log.d(TAG, "direction url: " + directionURL);
 
             // show direction

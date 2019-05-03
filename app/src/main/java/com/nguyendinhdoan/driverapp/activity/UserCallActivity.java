@@ -48,6 +48,8 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     private static final String DIRECTION_DISTANCE_KEY = "distance";
     private static final String DIRECTION_ADDRESS_KEY = "end_address";
     private static final String DIRECTION_TEXT_KEY = "text";
+    public static final String LAT_USER = "LAT_USER";
+    public static final String LNG_USER = "LNG_USER";
 
     private ImageView mapImageView;
     private TextView timeTextView;
@@ -61,6 +63,8 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     private IFirebaseMessagingAPI mFirebaseService;
 
     private String userId;
+    private double latitudeUser;
+    private double longitudeUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,8 +90,8 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     private void displayCallData() {
         Intent intentCallDriver = getIntent();
         if (intentCallDriver != null) {
-            double latitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LATITUDE_KEY, LATITUDE_DEFAULT);
-            double longitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LONGITUDE_KEY, LONGITUDE_DEFAULT);
+            latitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LATITUDE_KEY, LATITUDE_DEFAULT);
+            longitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LONGITUDE_KEY, LONGITUDE_DEFAULT);
             userId = intentCallDriver.getStringExtra(MyFirebaseMessaging.USER_ID_KEY);
             Log.d(TAG, "latitude user: " + latitudeUser);
             Log.d(TAG, "longitude user: " + longitudeUser);
@@ -192,9 +196,18 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                 break;
             }
             case R.id.accept_button: {
+                openTrackingActivity();
                 break;
             }
         }
+    }
+
+    private void openTrackingActivity() {
+        Intent intentTracking = new Intent(this, TrackingActivity.class);
+        intentTracking.putExtra(LAT_USER, latitudeUser);
+        intentTracking.putExtra(LNG_USER, longitudeUser);
+        startActivity(intentTracking);
+        finish();
     }
 
     private void cancelBooking(String userId) {
@@ -233,7 +246,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError databaseError) {
-
+                        Log.e(TAG, "onCancelled: error" + databaseError);
                     }
                 });
     }

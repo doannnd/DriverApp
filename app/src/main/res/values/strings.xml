@@ -43,5 +43,6 @@
     <string name="map_image_view">map image view</string>
     <string name="accept_button_text">Accept</string>
     <string name="decline_button_text">Decline</string>
+    <string name="title_activity_tracking">Map</string>
 
 </resources>
