@@ -23,10 +23,10 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/map_image_view"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="30dp"
         android:gravity="center_horizontal"
         android:textColor="@android:color/white"
-        android:textSize="24sp"
+        android:textSize="20sp"
         android:textStyle="bold"
         tools:text="1 MINUTES" />
 
@@ -36,10 +36,10 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/time_text_view"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="16dp"
         android:gravity="center_horizontal"
         android:textColor="@android:color/white"
-        android:textSize="24sp"
+        android:textSize="20sp"
         android:textStyle="bold"
         tools:text="1 KM" />
 
@@ -49,10 +49,42 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/distance_text_view"
         android:layout_centerHorizontal="true"
-        android:layout_margin="30dp"
+        android:layout_margin="16dp"
         android:gravity="center"
         android:textColor="@android:color/white"
-        android:textSize="20sp"
+        android:textSize="16sp"
         tools:text="17 Hoang Dao Thuy, Trung Hoa, Cay Giay, Ha Noi, VN" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="30dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/accept_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_login"
+            android:text="@string/accept_button_text"
+            android:textColor="@android:color/white"
+            tools:ignore="ButtonStyle" />
+
+        <Button
+            android:id="@+id/decline_button"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:background="@drawable/bg_button_default"
+            android:text="@string/decline_button_text"
+            tools:ignore="ButtonStyle" />
+
+    </LinearLayout>
 
 </RelativeLayout>

@@ -41,5 +41,7 @@
     <string name="user_cancel_operation">you cancel search destination address</string>
     <string name="please_change_state_you">Please change your status to online</string>
     <string name="map_image_view">map image view</string>
+    <string name="accept_button_text">Accept</string>
+    <string name="decline_button_text">Decline</string>
 
 </resources>

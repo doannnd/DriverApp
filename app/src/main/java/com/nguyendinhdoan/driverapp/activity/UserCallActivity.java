@@ -6,13 +6,27 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.model.Notification;
+import com.nguyendinhdoan.driverapp.model.Result;
+import com.nguyendinhdoan.driverapp.model.Sender;
+import com.nguyendinhdoan.driverapp.model.Token;
+import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
+import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseMessaging;
 
 import org.json.JSONArray;
@@ -23,7 +37,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class UserCallActivity extends AppCompatActivity {
+public class UserCallActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final double LATITUDE_DEFAULT = -1;
     private static final double LONGITUDE_DEFAULT = -1;
@@ -39,9 +53,14 @@ public class UserCallActivity extends AppCompatActivity {
     private TextView timeTextView;
     private TextView distanceTextView;
     private TextView addressTextView;
+    private Button acceptButton;
+    private Button declineButton;
 
     private MediaPlayer mediaPlayer;
     private IGoogleAPI mGoogleService;
+    private IFirebaseMessagingAPI mFirebaseService;
+
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +69,12 @@ public class UserCallActivity extends AppCompatActivity {
 
         initViews();
         setupUI();
+        addEvent();
+    }
+
+    private void addEvent() {
+        declineButton.setOnClickListener(this);
+        acceptButton.setOnClickListener(this);
     }
 
     private void setupUI() {
@@ -63,6 +88,7 @@ public class UserCallActivity extends AppCompatActivity {
         if (intentCallDriver != null) {
             double latitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LATITUDE_KEY, LATITUDE_DEFAULT);
             double longitudeUser = intentCallDriver.getDoubleExtra(MyFirebaseMessaging.LONGITUDE_KEY, LONGITUDE_DEFAULT);
+            userId = intentCallDriver.getStringExtra(MyFirebaseMessaging.USER_ID_KEY);
             Log.d(TAG, "latitude user: " + latitudeUser);
             Log.d(TAG, "longitude user: " + longitudeUser);
 
@@ -79,7 +105,7 @@ public class UserCallActivity extends AppCompatActivity {
             mGoogleService.getDirectionPath(userCallURL)
                     .enqueue(new Callback<String>() {
                         @Override
-                        public void onResponse(@NonNull Call<String> call,@NonNull Response<String> response) {
+                        public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
                             try {
                                 JSONObject root = new JSONObject(response.body());
                                 JSONArray routes = root.getJSONArray(DIRECTION_ROUTES_KEY);
@@ -110,7 +136,7 @@ public class UserCallActivity extends AppCompatActivity {
                         }
 
                         @Override
-                        public void onFailure(@NonNull Call<String> call,@NonNull Throwable t) {
+                        public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
                             Log.e(TAG, "error load information user : time, distance, address");
                         }
                     });
@@ -128,6 +154,7 @@ public class UserCallActivity extends AppCompatActivity {
 
     private void initGoogleService() {
         mGoogleService = Common.getGoogleAPI();
+        mFirebaseService = Common.getFirebaseMessagingAPI();
     }
 
     private void initViews() {
@@ -135,6 +162,8 @@ public class UserCallActivity extends AppCompatActivity {
         timeTextView = findViewById(R.id.time_text_view);
         distanceTextView = findViewById(R.id.distance_text_view);
         addressTextView = findViewById(R.id.address_text_view);
+        acceptButton = findViewById(R.id.accept_button);
+        declineButton = findViewById(R.id.decline_button);
     }
 
     @Override
@@ -153,5 +182,59 @@ public class UserCallActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         //mediaPlayer.start();
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.decline_button: {
+                cancelBooking(userId);
+                break;
+            }
+            case R.id.accept_button: {
+                break;
+            }
+        }
+    }
+
+    private void cancelBooking(String userId) {
+        DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
+
+        tokenTable.orderByKey().equalTo(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            Token token = postSnapshot.getValue(Token.class);
+
+                            String bodyMessage = "Driver cancel booking from user";
+                            Notification notification = new Notification("cancel booking", bodyMessage);
+                            if (token != null) {
+                                Sender sender = new Sender(notification, token.getToken());
+
+                                mFirebaseService.sendMessage(sender)
+                                        .enqueue(new Callback<Result>() {
+                                            @Override
+                                            public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
+                                                if (response.isSuccessful()) {
+                                                    Toast.makeText(UserCallActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
+                                                    finish();
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull Call<Result> call, @NonNull Throwable t) {
+                                                Log.e(TAG, "onFailure: error" + t.getMessage());
+                                            }
+                                        });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                    }
+                });
     }
 }

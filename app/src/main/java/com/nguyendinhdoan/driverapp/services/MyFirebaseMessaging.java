@@ -18,6 +18,7 @@ public class MyFirebaseMessaging extends FirebaseMessagingService {
 
     public static final String LATITUDE_KEY = "LATITUDE_KEY";
     public static final String LONGITUDE_KEY = "LONGITUDE_KEY";
+    public static final String USER_ID_KEY = "USER_ID_KEY";
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
@@ -28,16 +29,19 @@ public class MyFirebaseMessaging extends FirebaseMessagingService {
         if (remoteMessage.getNotification() != null) {
             Log.d(TAG, "onMessageReceived: if has data");
             String jsonBody = remoteMessage.getNotification().getBody();
+            String title = remoteMessage.getNotification().getTitle();
             // convert string to LatLng
             LatLng currentLocationUser = new Gson().fromJson(jsonBody, LatLng.class);
             Log.d(TAG, "onMessageReceive: latitude user: " + currentLocationUser.latitude);
             Log.d(TAG, "onMessageReceived: longitude user: " + currentLocationUser.longitude);
+            Log.d(TAG, "onMessageReceived: user id : " + title);
 
             // jump to UserCallActivity to display information caller
             Intent intentCall = new Intent(getBaseContext(), UserCallActivity.class);
             intentCall.putExtra(LATITUDE_KEY, currentLocationUser.latitude);
             intentCall.putExtra(LONGITUDE_KEY, currentLocationUser.longitude);
-            intentCall.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            intentCall.putExtra(USER_ID_KEY, title);
+            intentCall.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
             startActivity(intentCall);
         }
