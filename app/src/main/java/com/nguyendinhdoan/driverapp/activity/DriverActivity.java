@@ -57,9 +57,11 @@ import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.maps.android.PolyUtil;
@@ -169,7 +171,7 @@ public class DriverActivity extends FragmentActivity
                     Place place = Autocomplete.getPlaceFromIntent(data);
                     String destination = place.getName();
                     LatLng destinationLocation = place.getLatLng();
-                    Log.d(TAG," place address: " + place.getAddress());
+                    Log.d(TAG, " place address: " + place.getAddress());
                     Log.d(TAG, "place name: " + place.getName());
 
                     if (destinationLocation != null) {
@@ -206,12 +208,39 @@ public class DriverActivity extends FragmentActivity
 
     private void setupUI() {
         setupGoogleMap();
-        setupLocation();
         setupFirebase();
+        setupStateDriver();
+        setupLocation();
         setupRetrofit();
         setupPlacesAPI();
         init();
         updateTokenToDatabase();
+    }
+
+    private void setupStateDriver() {
+        DatabaseReference onlineDriver = FirebaseDatabase.getInstance().getReference().child(".info/connected");
+        FirebaseUser driver = driverAuth.getCurrentUser();
+        if (driver != null) {
+            String driverId = driver.getUid();
+            final DatabaseReference currentLocationDriver = FirebaseDatabase.getInstance()
+                    .getReference(DRIVER_LOCATION_TABLE_NAME).child(driverId);
+
+            // when driver offline <=> driver uncheck switch widget, we will remove location of driver in database
+            // online driver has data change ==> online or offline
+            onlineDriver.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    // DELETE if driver is disconnect
+                    currentLocationDriver.onDisconnect().removeValue();
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "onCancelled: error in remove current location " +
+                            "of driver when driver offline" + databaseError);
+                }
+            });
+        }
     }
 
     private void updateTokenToDatabase() {
@@ -288,9 +317,6 @@ public class DriverActivity extends FragmentActivity
                                     locationRequest, locationCallback, Looper.myLooper());
                         }
 
-                        if (report.isAnyPermissionPermanentlyDenied()) {
-                            // TODO: ....
-                        }
                     }
 
                     @Override
@@ -404,10 +430,17 @@ public class DriverActivity extends FragmentActivity
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         if (isChecked) {
+            // if switch is checked --> we set connect to firebase database
+            FirebaseDatabase.getInstance().goOnline();
+
             showSnackBar(getString(R.string.you_are_online));
             driverProgressBar.setVisibility(View.VISIBLE);
             startLocationUpdates();
         } else {
+
+            // if switch isn't check --> we set disconnect to firebase database
+            FirebaseDatabase.getInstance().goOffline();
+
             showSnackBar(getString(R.string.you_are_offline));
             stopLocationUpdates();
             // clear
