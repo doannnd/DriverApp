@@ -32,6 +32,7 @@ import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
+import com.nguyendinhdoan.driverapp.common.Common;
 import com.nguyendinhdoan.driverapp.model.Driver;
 import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
@@ -152,7 +153,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
 
                     @Override
                     public void onVerificationFailed(FirebaseException e) {
-                        Log.d(TAG,"error: " + e.getMessage());
+                        Log.d(TAG, "error: " + e.getMessage());
                         showSnackBar(e.getMessage());
                     }
                 }
@@ -186,7 +187,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
     }
 
     private void showSnackBar(String message) {
-        Snackbar.make(rootLayout,message, Snackbar.LENGTH_LONG ).show();
+        Snackbar.make(rootLayout, message, Snackbar.LENGTH_LONG).show();
     }
 
     @Override
@@ -236,7 +237,9 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         progressBar.setVisibility(View.INVISIBLE);
                         if (task.isSuccessful()) {
-                           saveDriverInDatabase(driver);
+                            saveDriverInDatabase(driver);
+                            // save current driver to send notification have driver name to user app
+                            Common.currentDriver = driver;
                         } else {
                             Log.e(TAG, "error: " + task.getException());
                             showSnackBar(Objects.requireNonNull(task.getException()).getMessage());

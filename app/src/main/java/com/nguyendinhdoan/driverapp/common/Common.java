@@ -4,6 +4,7 @@ import android.location.Location;
 import android.net.Uri;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.nguyendinhdoan.driverapp.model.Driver;
 import com.nguyendinhdoan.driverapp.remote.FirebaseMessagingClient;
 import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
@@ -12,6 +13,7 @@ import com.nguyendinhdoan.driverapp.remote.RetrofitClient;
 public class Common {
 
     public static Location currentLocation;
+    public static Driver currentDriver;
 
     private static final String API_KEY = "AIzaSyDXP3aehsojrBx1Nr0RPt85sLPpZLvmeAM";
     private static final String baseURL = "https://maps.googleapis.com";

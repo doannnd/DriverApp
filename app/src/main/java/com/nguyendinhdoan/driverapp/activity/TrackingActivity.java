@@ -13,7 +13,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
+import com.firebase.geofire.GeoQuery;
+import com.firebase.geofire.GeoQueryEventListener;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -24,6 +29,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -32,6 +39,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.SquareCap;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.PolyUtil;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
@@ -40,7 +52,13 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.model.Notification;
+import com.nguyendinhdoan.driverapp.model.Result;
+import com.nguyendinhdoan.driverapp.model.Sender;
+import com.nguyendinhdoan.driverapp.model.Token;
+import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
+import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -64,6 +82,10 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     public static final String DIRECTION_POINT_KEY = "points";
     public static final int DIRECTION_PADDING = 100;
     private static final float POLYLINE_WIDTH = 5F;
+    private static final double CIRCLE_RADIUS = 50; // 50m
+    private static final float CIRCLE_STROKE_WIDTH = 5.0F;
+    private static final int CIRCLE_FILL_COLOR = 0x220000FF;
+
 
     private ProgressBar loadingProgressBar;
 
@@ -71,6 +93,7 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
 
     private double latitudeUser;
     private double longitudeUser;
+    private String userId;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
@@ -79,6 +102,7 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     private Polyline trackingPolyline;
 
     private IGoogleAPI mServices;
+    private IFirebaseMessagingAPI mFirebaseService;
     private List<LatLng> directionPolylineList;
 
     @Override
@@ -99,10 +123,12 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
         if (getIntent() != null) {
             latitudeUser = getIntent().getDoubleExtra(UserCallActivity.LAT_USER, -1);
             longitudeUser = getIntent().getDoubleExtra(UserCallActivity.LNG_USER, -1);
+            userId = getIntent().getStringExtra(UserCallActivity.ID_USER);
         }
         // initial fused location provider
         fusedLocationProviderClient = new FusedLocationProviderClient(this);
         mServices = Common.getGoogleAPI();
+        mFirebaseService = Common.getFirebaseMessagingAPI();
 
         // update current location of driver
         startLocationUpdates();
@@ -273,11 +299,11 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
         trackingPolyline = mTrackingMap.addPolyline(grayPolylineOptions);
 
         // display default marker at destination position
-        int destinationPosition = directionPolylineList.size() - 1;
+       /* int destinationPosition = directionPolylineList.size() - 1;
         mTrackingMap.addMarker(new MarkerOptions()
                 .position(directionPolylineList.get(destinationPosition))
                 .title("user")
-        );
+        );*/
 
         loadingProgressBar.setVisibility(View.GONE);
     }
@@ -312,5 +338,94 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mTrackingMap = googleMap;
+
+        // show marker of user: destination driver go
+        mTrackingMap.addCircle(new CircleOptions()
+                        .center(new LatLng(latitudeUser, longitudeUser))
+                        .radius(CIRCLE_RADIUS)
+                        .strokeColor(Color.BLUE)
+                        .strokeWidth(CIRCLE_STROKE_WIDTH)
+                        .fillColor(CIRCLE_FILL_COLOR)
+        );
+
+        handleGeoFencing();
+    }
+
+    private void handleGeoFencing() {
+        DatabaseReference driverLocationTable = FirebaseDatabase.getInstance().getReference(DriverActivity.DRIVER_LOCATION_TABLE_NAME);
+        GeoFire trackingGeoFire = new GeoFire(driverLocationTable);
+
+        GeoQuery trackingGeoQuery = trackingGeoFire.queryAtLocation(
+                new GeoLocation(latitudeUser, longitudeUser),
+                0.05 // 50m
+        );
+
+        trackingGeoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
+            @Override
+            public void onKeyEntered(String key, GeoLocation location) {
+                // if driver in radius = 50m --> notification for user ....
+                sendNotificationArrivedToUser(userId);
+            }
+
+            @Override
+            public void onKeyExited(String key) {
+
+            }
+
+            @Override
+            public void onKeyMoved(String key, GeoLocation location) {
+
+            }
+
+            @Override
+            public void onGeoQueryReady() {
+
+            }
+
+            @Override
+            public void onGeoQueryError(DatabaseError error) {
+
+            }
+        });
+    }
+
+    private void sendNotificationArrivedToUser(String userId) {
+        DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
+
+        tokenTable.orderByKey().equalTo(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            Token token = postSnapshot.getValue(Token.class);
+
+                            String bodyMessage = String.format("The driver %s has arrived at your location", Common.currentDriver.getName());
+                            Notification notification = new Notification("accept", bodyMessage);
+                            if (token != null) {
+                                Sender sender = new Sender(notification, token.getToken());
+
+                                mFirebaseService.sendMessage(sender)
+                                        .enqueue(new Callback<Result>() {
+                                            @Override
+                                            public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
+                                                if (response.isSuccessful()) {
+                                                    Log.d(TAG, "onResponse: success send notification");
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull Call<Result> call, @NonNull Throwable t) {
+                                                Log.e(TAG, "onFailure: error" + t.getMessage());
+                                            }
+                                        });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
     }
 }

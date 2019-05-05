@@ -50,6 +50,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     private static final String DIRECTION_TEXT_KEY = "text";
     public static final String LAT_USER = "LAT_USER";
     public static final String LNG_USER = "LNG_USER";
+    public static final String ID_USER = "ID_USER";
 
     private ImageView mapImageView;
     private TextView timeTextView;
@@ -206,6 +207,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         Intent intentTracking = new Intent(this, TrackingActivity.class);
         intentTracking.putExtra(LAT_USER, latitudeUser);
         intentTracking.putExtra(LNG_USER, longitudeUser);
+        intentTracking.putExtra(ID_USER, userId);
         startActivity(intentTracking);
         finish();
     }
@@ -221,7 +223,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                             Token token = postSnapshot.getValue(Token.class);
 
                             String bodyMessage = "Driver cancel booking from user";
-                            Notification notification = new Notification("cancel booking", bodyMessage);
+                            Notification notification = new Notification("cancel", bodyMessage);
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 
