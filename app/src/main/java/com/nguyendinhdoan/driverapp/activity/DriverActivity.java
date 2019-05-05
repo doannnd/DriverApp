@@ -3,7 +3,9 @@ package com.nguyendinhdoan.driverapp.activity;
 import android.Manifest;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -14,6 +16,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TextInputEditText;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -21,7 +25,9 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,6 +35,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 
 import com.firebase.geofire.GeoFire;
@@ -63,6 +70,7 @@ import com.google.android.libraries.places.api.model.TypeFilter;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -735,6 +743,10 @@ public class DriverActivity extends AppCompatActivity
             case R.id.nav_trip_history: {
                 break;
             }
+            case R.id.nav_edit_profile: {
+                showDialogUpdateProfile();
+                break;
+            }
             case R.id.nav_way_bill: {
                 break;
             }
@@ -753,6 +765,24 @@ public class DriverActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void showDialogUpdateProfile() {
+        AlertDialog.Builder editProfileDialog = new AlertDialog.Builder(this);
+        editProfileDialog.setTitle(getString(R.string.edit_profile));
+        editProfileDialog.setMessage(getString(R.string.edit_profile_message));
+
+        // inflate layout
+        LayoutInflater layoutInflater = LayoutInflater.from(this);
+        View editProfileView = layoutInflater.inflate(R.layout.edit_driver_profile, null);
+
+        // reference view
+        final TextInputEditText emailEditText = editProfileView.findViewById(R.id.email_edit_text);
+        final TextInputEditText nameEditText = editProfileView.findViewById(R.id.name_edit_text);
+        final TextInputLayout phoneEditText = editProfileView.findViewById(R.id.phone_edit_text);
+        final ImageView uploadImageView = editProfileView.findViewById(R.id.upload_image_view);
+
+        editProfileDialog.setView(editProfileView);
     }
 
     private void signOut() {
