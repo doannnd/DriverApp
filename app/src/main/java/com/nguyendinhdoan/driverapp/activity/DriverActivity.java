@@ -12,18 +12,27 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SwitchCompat;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Switch;
-import android.widget.TextView;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -52,6 +61,8 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.model.RectangularBounds;
+import com.google.android.libraries.places.api.model.TypeFilter;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
@@ -65,6 +76,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.google.maps.android.PolyUtil;
+import com.google.maps.android.SphericalUtil;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -89,9 +101,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class DriverActivity extends FragmentActivity
-        implements OnMapReadyCallback,
-        CompoundButton.OnCheckedChangeListener, View.OnTouchListener {
+public class DriverActivity extends AppCompatActivity
+        implements OnMapReadyCallback, CompoundButton.OnCheckedChangeListener,
+        View.OnTouchListener, NavigationView.OnNavigationItemSelectedListener {
 
     public static final String TAG = "DRIVER_ACTIVITY";
     public static final String DRIVER_LOCATION_TABLE_NAME = "driver_location";
@@ -104,15 +116,16 @@ public class DriverActivity extends FragmentActivity
     public static final String DIRECTION_ROUTES_KEY = "routes";
     public static final String DIRECTION_POLYLINE_KEY = "overview_polyline";
     public static final String DIRECTION_POINT_KEY = "points";
-    public static final int DIRECTION_PADDING = 100;
+    public static final int DIRECTION_PADDING = 150;
     private static final float POLYLINE_WIDTH = 5F;
     private static final long DIRECTION_ANIMATE_DURATION = 3000L;
     private static final long DRAW_PATH_TIME_OUT = 3000L;
     private static final int AUTOCOMPLETE_REQUEST_CODE = 9000;
 
-    private Switch stateDriverSwitch;
+    private SwitchCompat stateDriverSwitch;
     private EditText destinationEditText;
     private ProgressBar driverProgressBar;
+    private Button findUserButton;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
@@ -142,7 +155,21 @@ public class DriverActivity extends FragmentActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_driver);
+        setContentView(R.layout.activity_driver_home);
+
+        Toolbar toolbar = findViewById(R.id.driver_toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+        navigationView.setNavigationItemSelectedListener(this);
 
         initViews();
         setupUI();
@@ -152,10 +179,21 @@ public class DriverActivity extends FragmentActivity
 
     private void autoCompletePlaces() {
         List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG);
+        // restrict places only in city
+        LatLng pinLocation = new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude());
+        /*
+         * distance: meter unit: 100000 = 100 km
+         * heading: 0 - north, 180-south
+         * */
+        LatLng northSide = SphericalUtil.computeOffset(pinLocation, 100000, 0);
+        LatLng southSide = SphericalUtil.computeOffset(pinLocation, 100000, 180);
 
         // Start the autocomplete intent.
         Intent intent = new Autocomplete.IntentBuilder(
                 AutocompleteActivityMode.FULLSCREEN, fields)
+                .setTypeFilter(TypeFilter.ADDRESS)
+                .setCountry("VN")
+                .setLocationBias(RectangularBounds.newInstance(southSide, northSide))
                 .build(this);
         startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
     }
@@ -204,6 +242,7 @@ public class DriverActivity extends FragmentActivity
         stateDriverSwitch = findViewById(R.id.state_driver_switch);
         destinationEditText = findViewById(R.id.destination_edit_text);
         driverProgressBar = findViewById(R.id.driver_progress_bar);
+        findUserButton = findViewById(R.id.find_user_button);
     }
 
     private void setupUI() {
@@ -385,6 +424,8 @@ public class DriverActivity extends FragmentActivity
                 .position(new LatLng(driverLatitude, driverLongitude))
                 .title(getString(R.string.title_of_you))
         );
+        // show title marker
+        driverMarker.showInfoWindow();
 
         // move camera
         driverMap.moveCamera(
@@ -456,11 +497,11 @@ public class DriverActivity extends FragmentActivity
     }
 
     private void showSnackBar(String message) {
-        Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT);
-        View view = snackbar.getView();
+        Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG);
+       /* View view = snackbar.getView();
         view.setBackgroundColor(getResources().getColor(R.color.colorWhite));
         TextView textSnack = view.findViewById(android.support.design.R.id.snackbar_text);
-        textSnack.setTextColor(getResources().getColor(R.color.colorBlack));
+        textSnack.setTextColor(getResources().getColor(R.color.colorBlack));*/
         snackbar.show();
     }
 
@@ -554,10 +595,12 @@ public class DriverActivity extends FragmentActivity
 
         // display default marker at destination position
         int destinationPosition = directionPolylineList.size() - 1;
-        driverMap.addMarker(new MarkerOptions()
+        Marker destinationMarker = driverMap.addMarker(new MarkerOptions()
                 .position(directionPolylineList.get(destinationPosition))
-                .title(getString(R.string.pickup_location))
+                .title(destinationEditText.getText().toString())
         );
+        // show destination marker title
+        destinationMarker.showInfoWindow();
 
         animateDirectionPolyline();
     }
@@ -567,8 +610,8 @@ public class DriverActivity extends FragmentActivity
         ValueAnimator polyLineAnimator = ValueAnimator.ofInt(0, 100);
         polyLineAnimator.setDuration(DIRECTION_ANIMATE_DURATION);
         polyLineAnimator.setInterpolator(new LinearInterpolator());
-       /* polyLineAnimator.setRepeatCount(ValueAnimator.INFINITE);
-        polyLineAnimator.setRepeatMode(ValueAnimator.RESTART);*/
+        polyLineAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        polyLineAnimator.setRepeatMode(ValueAnimator.RESTART);
         polyLineAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -581,16 +624,15 @@ public class DriverActivity extends FragmentActivity
             }
         });
         polyLineAnimator.start();
-
         // add marker animate on direction polyline
-        carMarker = driverMap.addMarker(
+       /* carMarker = driverMap.addMarker(
                 new MarkerOptions().position(currentPosition)
                         .flat(true)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
-        );
+        );*/
 
         // show detail animate direction polyline
-        displayDetailDirectionPolyline();
+        //displayDetailDirectionPolyline();
     }
 
     private void displayDetailDirectionPolyline() {
@@ -662,7 +704,11 @@ public class DriverActivity extends FragmentActivity
     public boolean onTouch(View v, MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN: {
-                autoCompletePlaces();
+                if (stateDriverSwitch.isChecked()) {
+                    autoCompletePlaces();
+                } else {
+                    showSnackBar(getString(R.string.please_change_state_you));
+                }
                 break;
             }
             case MotionEvent.ACTION_UP: {
@@ -674,4 +720,40 @@ public class DriverActivity extends FragmentActivity
         }
         return true;
     }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        if (id == R.id.nav_home) {
+            // Handle the camera action
+        } else if (id == R.id.nav_gallery) {
+
+        } else if (id == R.id.nav_slideshow) {
+
+        } else if (id == R.id.nav_tools) {
+
+        } else if (id == R.id.nav_share) {
+
+        } else if (id == R.id.nav_send) {
+
+        }
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
 }
