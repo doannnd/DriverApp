@@ -237,9 +237,12 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         progressBar.setVisibility(View.INVISIBLE);
                         if (task.isSuccessful()) {
+                            // save previous, after jump to driver screen
+                            //Common.currentDriver = driver;
+
                             saveDriverInDatabase(driver);
                             // save current driver to send notification have driver name to user app
-                            Common.currentDriver = driver;
+
                         } else {
                             Log.e(TAG, "error: " + task.getException());
                             showSnackBar(Objects.requireNonNull(task.getException()).getMessage());

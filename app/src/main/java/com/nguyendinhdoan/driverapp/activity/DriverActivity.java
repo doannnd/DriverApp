@@ -17,7 +17,6 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
-import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -25,7 +24,6 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -37,6 +35,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -70,7 +69,6 @@ import com.google.android.libraries.places.api.model.TypeFilter;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -89,6 +87,7 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.model.Driver;
 import com.nguyendinhdoan.driverapp.model.Token;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
@@ -102,6 +101,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -126,11 +126,20 @@ public class DriverActivity extends AppCompatActivity
     private static final long DIRECTION_ANIMATE_DURATION = 3000L;
     private static final long DRAW_PATH_TIME_OUT = 3000L;
     private static final int AUTOCOMPLETE_REQUEST_CODE = 9000;
+    private static final String DRIVER_TABLE_NAME = "drivers";
+    private static final String NV_CODE = "VN";
+    private static final double DISTANCE_RESTRICT = 100000;
+    private static final double HEADING_NORTH = 0;
+    private static final double HEADING_SOUTH = 180;
 
     private SwitchCompat stateDriverSwitch;
     private EditText destinationEditText;
     private ProgressBar driverProgressBar;
     private Button findUserButton;
+    private Toolbar toolbar;
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private ActionBarDrawerToggle drawerToggle;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
@@ -162,20 +171,6 @@ public class DriverActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_home);
 
-        Toolbar toolbar = findViewById(R.id.driver_toolbar);
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayShowTitleEnabled(false);
-        }
-
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
-        navigationView.setNavigationItemSelectedListener(this);
-
         initViews();
         setupUI();
         addEvents();
@@ -183,21 +178,23 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void autoCompletePlaces() {
-        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG);
+        List<Place.Field> fields = Arrays.asList(Place.Field.ID,
+                Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG);
         // restrict places only in city
-        LatLng pinLocation = new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude());
+        LatLng pinLocation = new LatLng(Common.currentLocation.getLatitude(),
+                Common.currentLocation.getLongitude());
         /*
          * distance: meter unit: 100000 = 100 km
          * heading: 0 - north, 180-south
          * */
-        LatLng northSide = SphericalUtil.computeOffset(pinLocation, 100000, 0);
-        LatLng southSide = SphericalUtil.computeOffset(pinLocation, 100000, 180);
+        LatLng northSide = SphericalUtil.computeOffset(pinLocation, DISTANCE_RESTRICT, HEADING_NORTH);
+        LatLng southSide = SphericalUtil.computeOffset(pinLocation, DISTANCE_RESTRICT, HEADING_SOUTH);
 
         // Start the autocomplete intent.
         Intent intent = new Autocomplete.IntentBuilder(
                 AutocompleteActivityMode.FULLSCREEN, fields)
                 .setTypeFilter(TypeFilter.ADDRESS)
-                .setCountry("VN")
+                .setCountry(NV_CODE)
                 .setLocationBias(RectangularBounds.newInstance(southSide, northSide))
                 .build(this);
         startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
@@ -241,9 +238,13 @@ public class DriverActivity extends AppCompatActivity
     private void addEvents() {
         stateDriverSwitch.setOnCheckedChangeListener(this);
         destinationEditText.setOnTouchListener(this);
+        navigationView.setNavigationItemSelectedListener(this);
     }
 
     private void initViews() {
+        toolbar = findViewById(R.id.driver_toolbar);
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
         stateDriverSwitch = findViewById(R.id.state_driver_switch);
         destinationEditText = findViewById(R.id.destination_edit_text);
         driverProgressBar = findViewById(R.id.driver_progress_bar);
@@ -251,6 +252,8 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void setupUI() {
+        setupToolbar();
+        setupNavigationView();
         setupGoogleMap();
         setupFirebase();
         setupStateDriver();
@@ -259,6 +262,55 @@ public class DriverActivity extends AppCompatActivity
         setupPlacesAPI();
         init();
         updateTokenToDatabase();
+    }
+
+    private void setupNavigationView() {
+        drawerToggle = new ActionBarDrawerToggle(
+                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawerLayout.addDrawerListener(drawerToggle);
+        drawerToggle.syncState();
+
+        View headerView = navigationView.getHeaderView(0);
+        final TextView nameTextView = headerView.findViewById(R.id.name_text_view);
+        final TextView emailTextView = headerView.findViewById(R.id.email_text_view);
+        CircleImageView avatarImageView = headerView.findViewById(R.id.avatar_image_view);
+
+        FirebaseUser driver = FirebaseAuth.getInstance().getCurrentUser();
+        if (driver != null) {
+            // find driver with driver id
+            String driverId = driver.getUid();
+            DatabaseReference driverTable = FirebaseDatabase.getInstance()
+                    .getReference(DRIVER_TABLE_NAME).child(driverId);
+
+            driverTable.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    Common.currentDriver = dataSnapshot.getValue(Driver.class);
+
+                    // display information of driver on navigation header.
+                    if (Common.currentDriver != null) {
+                        nameTextView.setText(Common.currentDriver.getName());
+                        emailTextView.setText(Common.currentDriver.getEmail());
+                        /* Glide.with(this).load(Common.currentDriver.getAvatarUrl())
+                        .placeholder(R.drawable.ic_nav)
+                        .into(avatarImageView);*/
+                    }
+
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.d(TAG, "onCancelled: error load profile driver" + databaseError);
+                }
+            });
+        }
+    }
+
+    private void setupToolbar() {
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
     }
 
     private void setupStateDriver() {
@@ -728,17 +780,15 @@ public class DriverActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START);
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
         }
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_trip_history: {
                 break;
@@ -762,27 +812,46 @@ public class DriverActivity extends AppCompatActivity
             }
         }
 
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
+        drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
 
     private void showDialogUpdateProfile() {
+        View view = LayoutInflater.from(this).inflate(R.layout.edit_driver_profile, null);
+
         AlertDialog.Builder editProfileDialog = new AlertDialog.Builder(this);
         editProfileDialog.setTitle(getString(R.string.edit_profile));
-        editProfileDialog.setMessage(getString(R.string.edit_profile_message));
 
-        // inflate layout
-        LayoutInflater layoutInflater = LayoutInflater.from(this);
-        View editProfileView = layoutInflater.inflate(R.layout.edit_driver_profile, null);
+        final TextInputEditText emailEditText = view.findViewById(R.id.email_edit_text);
+        final TextInputEditText nameEditText = view.findViewById(R.id.name_edit_text);
+        final TextInputEditText phoneEditText = view.findViewById(R.id.phone_edit_text);
+        final ImageView uploadImageView = view.findViewById(R.id.upload_image_view);
 
-        // reference view
-        final TextInputEditText emailEditText = editProfileView.findViewById(R.id.email_edit_text);
-        final TextInputEditText nameEditText = editProfileView.findViewById(R.id.name_edit_text);
-        final TextInputLayout phoneEditText = editProfileView.findViewById(R.id.phone_edit_text);
-        final ImageView uploadImageView = editProfileView.findViewById(R.id.upload_image_view);
+        // display information of driver ==> ui
+        emailEditText.setText(Common.currentDriver.getEmail());
+        nameEditText.setText(Common.currentDriver.getName());
+        phoneEditText.setText(Common.currentDriver.getPhone());
 
-        editProfileDialog.setView(editProfileView);
+        editProfileDialog.setView(view);
+        handelEditProfileDriver(editProfileDialog);
+    }
+
+    private void handelEditProfileDriver(AlertDialog.Builder editProfileDialog) {
+        editProfileDialog.setPositiveButton(getString(R.string.edit_button_dilog), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // close the dialog and ...
+                dialog.dismiss();
+            }
+        }).setNegativeButton(getString(R.string.cancel_button_dialog), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // close dialog and cancel update profile of driver.
+            }
+        });
+
+        // show edit profile dialog on ui
+        editProfileDialog.show();
     }
 
     private void signOut() {

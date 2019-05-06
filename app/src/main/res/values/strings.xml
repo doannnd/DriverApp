@@ -68,7 +68,9 @@
     <string name="menu_settings">Settings</string>
     <string name="menu_sign_out">Sign out</string>
     <string name="menu_edit_profile">Edit profile</string>
-    <string name="edit_profile">EDIT PROFILE</string>
+    <string name="edit_profile">Update</string>
     <string name="edit_profile_message">Please fill all information</string>
+    <string name="edit_button_dilog">Edit</string>
+    <string name="cancel_button_dialog">cancel</string>
 
 </resources>

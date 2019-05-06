@@ -80,6 +80,7 @@
             android:textColorHint="@android:color/darker_gray"
             android:textSize="14sp"
             android:textStyle="bold"
+            android:focusableInTouchMode="false"
             tools:ignore="Autofill" />
 
     </android.support.v7.widget.CardView>
