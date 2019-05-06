@@ -499,6 +499,11 @@ public class DriverActivity extends AppCompatActivity
 
         // hide progress bar complete display current location
         driverProgressBar.setVisibility(View.INVISIBLE);
+
+        // check if polyline driver exist ==> reload polyline
+        if (directionPolylineList.size() != 0) {
+            showDirectionOnMap(directionPolylineList);
+        }
     }
 
 
