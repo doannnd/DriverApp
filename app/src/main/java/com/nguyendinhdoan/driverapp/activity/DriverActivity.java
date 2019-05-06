@@ -187,6 +187,8 @@ public class DriverActivity extends AppCompatActivity
     private AlertDialog loading;
     private StorageReference storageReference;
     private DatabaseReference driverTable;
+    private LatLng destinationLocation;
+    private ValueAnimator polyLineAnimator;
 
     private int index = -1;
     private int next = 1;
@@ -500,9 +502,26 @@ public class DriverActivity extends AppCompatActivity
         // hide progress bar complete display current location
         driverProgressBar.setVisibility(View.INVISIBLE);
 
-        // check if polyline driver exist ==> reload polyline
+        // check current location change
         if (directionPolylineList.size() != 0) {
-            showDirectionOnMap(directionPolylineList);
+            driverMap.clear();
+
+            // add new marker
+            // draw marker on google map
+            driverMarker = driverMap.addMarker(new MarkerOptions()
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
+                    .position(new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude()))
+                    .title(getString(R.string.title_of_you))
+            );
+            // show title marker
+            driverMarker.showInfoWindow();
+
+            // draw
+            handleDriverDirection(destinationLocation);
+        }
+
+        if (polyLineAnimator != null) {
+            polyLineAnimator.cancel();
         }
     }
 
@@ -556,13 +575,18 @@ public class DriverActivity extends AppCompatActivity
             stopLocationUpdates();
             // clear
             driverMap.clear();
-            if (handler != null) {
+            /*if (handler != null) {
                 handler.removeCallbacks(drawPathRunnable);
-            }
+            }*/
             // if marker exist --> delete
             if (driverMarker != null) {
                 driverMarker.remove();
             }
+
+            if (polyLineAnimator != null) {
+                polyLineAnimator.cancel();
+            }
+
         }
     }
 
@@ -576,6 +600,27 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void handleDriverDirection(LatLng destinationLocation) {
+
+        driverProgressBar.setVisibility(View.VISIBLE);
+
+        if (directionPolylineList.size() != 0) {
+            driverMap.clear();
+
+            // add new marker
+            // draw marker on google map
+            driverMarker = driverMap.addMarker(new MarkerOptions()
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
+                    .position(new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude()))
+                    .title(getString(R.string.title_of_you))
+            );
+            // show title marker
+            driverMarker.showInfoWindow();
+        }
+
+        if (polyLineAnimator != null) {
+            polyLineAnimator.cancel();
+        }
+
         // save current position
         double currentLatitude = Common.currentLocation.getLatitude();
         double currentLongitude = Common.currentLocation.getLongitude();
@@ -677,7 +722,7 @@ public class DriverActivity extends AppCompatActivity
 
     private void animateDirectionPolyline() {
         // animation polyline
-        ValueAnimator polyLineAnimator = ValueAnimator.ofInt(0, 100);
+        polyLineAnimator = ValueAnimator.ofInt(0, 100);
         polyLineAnimator.setDuration(DIRECTION_ANIMATE_DURATION);
         polyLineAnimator.setInterpolator(new LinearInterpolator());
         polyLineAnimator.setRepeatCount(ValueAnimator.INFINITE);
@@ -694,6 +739,9 @@ public class DriverActivity extends AppCompatActivity
             }
         });
         polyLineAnimator.start();
+
+        // hide loading
+        driverProgressBar.setVisibility(View.GONE);
         // add marker animate on direction polyline
        /* carMarker = driverMap.addMarker(
                 new MarkerOptions().position(currentPosition)
@@ -705,12 +753,12 @@ public class DriverActivity extends AppCompatActivity
         //displayDetailDirectionPolyline();
     }
 
-    private void displayDetailDirectionPolyline() {
+   /* private void displayDetailDirectionPolyline() {
         handler = new Handler();
         handler.postDelayed(drawPathRunnable, DRAW_PATH_TIME_OUT);
-    }
+    }*/
 
-    Runnable drawPathRunnable = new Runnable() {
+  /*  Runnable drawPathRunnable = new Runnable() {
         @Override
         public void run() {
             if (index < directionPolylineList.size() - 1) {
@@ -748,9 +796,9 @@ public class DriverActivity extends AppCompatActivity
             valueAnimator.start();
             handler.postDelayed(this, 3000);
         }
-    };
+    };*/
 
-    private float getBearing(LatLng startPosition, LatLng endPosition) {
+   /* private float getBearing(LatLng startPosition, LatLng endPosition) {
         double lat = Math.abs(startPosition.latitude - endPosition.latitude);
         double lng = Math.abs(startPosition.longitude - endPosition.longitude);
 
@@ -768,7 +816,7 @@ public class DriverActivity extends AppCompatActivity
             return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 270);
         }
         return -1;
-    }
+    }*/
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
@@ -848,9 +896,9 @@ public class DriverActivity extends AppCompatActivity
         emailEditText.setText(Common.currentDriver.getEmail());
         nameEditText.setText(Common.currentDriver.getName());
         phoneEditText.setText(Common.currentDriver.getPhone());
-        /*Glide.with(DriverActivity.this).load(Common.currentDriver.getAvatarUrl())
+        Glide.with(DriverActivity.this).load(Common.currentDriver.getAvatarUrl())
                 .placeholder(R.drawable.ic_nav)
-                .into(uploadImageView);*/
+                .into(uploadImageView);
 
         // upload image from your phone
         uploadImageView.setOnClickListener(new View.OnClickListener() {
@@ -900,7 +948,7 @@ public class DriverActivity extends AppCompatActivity
 
                     Place place = Autocomplete.getPlaceFromIntent(data);
                     String destination = place.getName();
-                    LatLng destinationLocation = place.getLatLng();
+                    destinationLocation = place.getLatLng();
                     Log.d(TAG, " place address: " + place.getAddress());
                     Log.d(TAG, "place name: " + place.getName());
 
