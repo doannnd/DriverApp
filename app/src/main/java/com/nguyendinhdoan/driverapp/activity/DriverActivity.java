@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,6 +18,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -37,6 +39,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.api.Status;
@@ -78,19 +81,28 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
+import com.karumi.dexter.listener.single.PermissionListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
 import com.nguyendinhdoan.driverapp.model.Driver;
 import com.nguyendinhdoan.driverapp.model.Token;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
+import com.nguyendinhdoan.driverapp.utils.CommonUtils;
+import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -98,10 +110,14 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import dmax.dialog.SpotsDialog;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -131,6 +147,11 @@ public class DriverActivity extends AppCompatActivity
     private static final double DISTANCE_RESTRICT = 100000;
     private static final double HEADING_NORTH = 0;
     private static final double HEADING_SOUTH = 180;
+    private static final int UPLOAD_REQUEST_CODE = 10;
+    private static final String NAME_KEY = "name";
+    private static final String EMAIL_KEY = "email";
+    private static final String PHONE_KEY = "phone";
+    private static final String AVATAR_URL_KEY = "avatarUrl";
 
     private SwitchCompat stateDriverSwitch;
     private EditText destinationEditText;
@@ -140,6 +161,11 @@ public class DriverActivity extends AppCompatActivity
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private ActionBarDrawerToggle drawerToggle;
+    private ImageView uploadImageView;
+    private TextInputEditText emailEditText;
+    private TextInputEditText nameEditText;
+    private TextInputEditText phoneEditText;
+    private TextInputLayout layoutName, layoutPhone, layoutEmail;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
@@ -149,7 +175,6 @@ public class DriverActivity extends AppCompatActivity
     private GeoFire driverGeoFire;
     private Marker driverMarker;
 
-    private LatLng currentPosition;
     private LatLng startPosition;
     private LatLng endPosition;
     private IGoogleAPI mServices;
@@ -158,6 +183,10 @@ public class DriverActivity extends AppCompatActivity
     private Polyline blackPolyline;
     private Handler handler;
     private Marker carMarker;
+
+    private AlertDialog loading;
+    private StorageReference storageReference;
+    private DatabaseReference driverTable;
 
     private int index = -1;
     private int next = 1;
@@ -200,40 +229,6 @@ public class DriverActivity extends AppCompatActivity
         startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
-            if (resultCode == RESULT_OK && data != null) {
-
-                if (stateDriverSwitch.isChecked()) { // if driver online --> working
-
-                    Place place = Autocomplete.getPlaceFromIntent(data);
-                    String destination = place.getName();
-                    LatLng destinationLocation = place.getLatLng();
-                    Log.d(TAG, " place address: " + place.getAddress());
-                    Log.d(TAG, "place name: " + place.getName());
-
-                    if (destinationLocation != null) {
-                        destinationEditText.setText(destination);
-                        // handle direction with destination formatted
-                        handleDriverDirection(destinationLocation);
-                    }
-
-                } else {
-                    showSnackBar(getString(R.string.please_change_state_you));
-                }
-
-            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
-                Status status = Autocomplete.getStatusFromIntent(Objects.requireNonNull(data));
-                Log.d(TAG, status.getStatusMessage());
-            } else if (resultCode == RESULT_CANCELED) {
-                // The user canceled the operation.
-                showSnackBar(getString(R.string.user_cancel_operation));
-            }
-        }
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     private void addEvents() {
         stateDriverSwitch.setOnCheckedChangeListener(this);
@@ -252,6 +247,7 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void setupUI() {
+        setupLoading();
         setupToolbar();
         setupNavigationView();
         setupGoogleMap();
@@ -264,22 +260,32 @@ public class DriverActivity extends AppCompatActivity
         updateTokenToDatabase();
     }
 
+    private void setupLoading() {
+        loading = new SpotsDialog.Builder()
+                .setContext(this)
+                .build();
+    }
+
     private void setupNavigationView() {
         drawerToggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(drawerToggle);
         drawerToggle.syncState();
 
+        updateInforDriver();
+    }
+
+    private void updateInforDriver() {
         View headerView = navigationView.getHeaderView(0);
         final TextView nameTextView = headerView.findViewById(R.id.name_text_view);
         final TextView emailTextView = headerView.findViewById(R.id.email_text_view);
-        CircleImageView avatarImageView = headerView.findViewById(R.id.avatar_image_view);
+        final CircleImageView avatarImageView = headerView.findViewById(R.id.avatar_image_view);
 
         FirebaseUser driver = FirebaseAuth.getInstance().getCurrentUser();
         if (driver != null) {
             // find driver with driver id
             String driverId = driver.getUid();
-            DatabaseReference driverTable = FirebaseDatabase.getInstance()
+            driverTable = FirebaseDatabase.getInstance()
                     .getReference(DRIVER_TABLE_NAME).child(driverId);
 
             driverTable.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -291,9 +297,9 @@ public class DriverActivity extends AppCompatActivity
                     if (Common.currentDriver != null) {
                         nameTextView.setText(Common.currentDriver.getName());
                         emailTextView.setText(Common.currentDriver.getEmail());
-                        /* Glide.with(this).load(Common.currentDriver.getAvatarUrl())
-                        .placeholder(R.drawable.ic_nav)
-                        .into(avatarImageView);*/
+                        Glide.with(DriverActivity.this).load(Common.currentDriver.getAvatarUrl())
+                                .placeholder(R.drawable.ic_nav)
+                                .into(avatarImageView);
                     }
 
                 }
@@ -384,6 +390,8 @@ public class DriverActivity extends AppCompatActivity
         DatabaseReference driverLocation = FirebaseDatabase.getInstance().getReference(DRIVER_LOCATION_TABLE_NAME);
         driverGeoFire = new GeoFire(driverLocation);
         driverAuth = FirebaseAuth.getInstance();
+
+        storageReference = FirebaseStorage.getInstance().getReference();
     }
 
     private void setupGoogleMap() {
@@ -566,7 +574,7 @@ public class DriverActivity extends AppCompatActivity
         // save current position
         double currentLatitude = Common.currentLocation.getLatitude();
         double currentLongitude = Common.currentLocation.getLongitude();
-        currentPosition = new LatLng(currentLatitude, currentLongitude);
+        LatLng currentPosition = new LatLng(currentLatitude, currentLongitude);
 
         try {
             //building direction url for driver
@@ -817,36 +825,215 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void showDialogUpdateProfile() {
-        View view = LayoutInflater.from(this).inflate(R.layout.edit_driver_profile, null);
-
         AlertDialog.Builder editProfileDialog = new AlertDialog.Builder(this);
         editProfileDialog.setTitle(getString(R.string.edit_profile));
 
-        final TextInputEditText emailEditText = view.findViewById(R.id.email_edit_text);
-        final TextInputEditText nameEditText = view.findViewById(R.id.name_edit_text);
-        final TextInputEditText phoneEditText = view.findViewById(R.id.phone_edit_text);
-        final ImageView uploadImageView = view.findViewById(R.id.upload_image_view);
+        View view = LayoutInflater.from(this).inflate(R.layout.edit_driver_profile, null);
+
+        emailEditText = view.findViewById(R.id.email_edit_text);
+        nameEditText = view.findViewById(R.id.name_edit_text);
+        phoneEditText = view.findViewById(R.id.phone_edit_text);
+        uploadImageView = view.findViewById(R.id.upload_image_view);
+
+        layoutEmail = view.findViewById(R.id.layout_email_profile);
+        layoutName = view.findViewById(R.id.layout_name_profile);
+        layoutPhone = view.findViewById(R.id.layout_phone_profile);
 
         // display information of driver ==> ui
         emailEditText.setText(Common.currentDriver.getEmail());
         nameEditText.setText(Common.currentDriver.getName());
         phoneEditText.setText(Common.currentDriver.getPhone());
+        /*Glide.with(DriverActivity.this).load(Common.currentDriver.getAvatarUrl())
+                .placeholder(R.drawable.ic_nav)
+                .into(uploadImageView);*/
+
+        // upload image from your phone
+        uploadImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                uploadAvatarImage();
+            }
+        });
 
         editProfileDialog.setView(view);
         handelEditProfileDriver(editProfileDialog);
+    }
+
+    private void uploadAvatarImage() {
+        Dexter.withActivity(this)
+                .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .withListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted(PermissionGrantedResponse response) {
+                        Intent uploadIntent = new Intent();
+                        uploadIntent.setAction(Intent.ACTION_GET_CONTENT);
+                        uploadIntent.setType("image/*");
+                        startActivityForResult(uploadIntent, UPLOAD_REQUEST_CODE);
+                    }
+
+                    @Override
+                    public void onPermissionDenied(PermissionDeniedResponse response) {
+                        if (response.isPermanentlyDenied()) {
+                            showSnackBar(getString(R.string.permission_denied));
+                        }
+                    }
+
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+                        token.continuePermissionRequest();
+                    }
+                }).check();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+
+                if (stateDriverSwitch.isChecked()) { // if driver online --> working
+
+                    Place place = Autocomplete.getPlaceFromIntent(data);
+                    String destination = place.getName();
+                    LatLng destinationLocation = place.getLatLng();
+                    Log.d(TAG, " place address: " + place.getAddress());
+                    Log.d(TAG, "place name: " + place.getName());
+
+                    if (destinationLocation != null) {
+                        destinationEditText.setText(destination);
+                        // handle direction with destination formatted
+                        handleDriverDirection(destinationLocation);
+                    }
+
+                } else {
+                    showSnackBar(getString(R.string.please_change_state_you));
+                }
+
+            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
+                Status status = Autocomplete.getStatusFromIntent(Objects.requireNonNull(data));
+                Log.d(TAG, status.getStatusMessage());
+            } else if (resultCode == RESULT_CANCELED) {
+                // The user canceled the operation.
+                showSnackBar(getString(R.string.user_cancel_operation));
+            }
+        } else if (requestCode == UPLOAD_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+
+                Uri imageUri = data.getData();
+
+                CropImage.activity(imageUri)
+                        .setGuidelines(CropImageView.Guidelines.ON)
+                        .setAspectRatio(1, 1)
+                        .start(this);
+
+            } else if (resultCode == RESULT_CANCELED) {
+                // The user canceled the operation.
+                showSnackBar(getString(R.string.error_upload_image));
+            }
+        }
+
+        // load avatar image wit crop image
+        if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
+            CropImage.ActivityResult result = CropImage.getActivityResult(data);
+            if (resultCode == RESULT_OK && result != null) {
+                Uri resultUri = result.getUri();
+
+                updateUIAndServer(resultUri);
+
+            } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE && result != null) {
+                Exception error = result.getError();
+                Log.e(TAG, "onActivityResult: error upload image with crop" + error);
+            }
+        }
+    }
+
+    private void updateUIAndServer(final Uri resultUri) {
+        loading.show();
+
+        // random name image uploaded --> image code
+        String imageName = UUID.randomUUID().toString();
+        final StorageReference imageFolder = storageReference.child("images" + imageName);
+
+        imageFolder.putFile(resultUri)
+                .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        imageFolder.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                            @Override
+                            public void onSuccess(final Uri uri) {
+                                // update uri to driver table
+                                Map<String, Object> avatarUrl = new HashMap<>();
+                                avatarUrl.put(AVATAR_URL_KEY, uri.toString());
+
+                                // update avatar url to driver table
+                                driverTable.updateChildren(avatarUrl).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<Void> task) {
+                                        loading.dismiss();
+                                        if (task.isSuccessful()) {
+                                            // display avatar image
+                                            uploadImageView.setImageURI(resultUri);
+
+                                            showSnackBar(getString(R.string.upload_avatar_success));
+                                            // update avatar navigation drawer
+                                            updateInforDriver();
+                                        } else {
+                                            showSnackBar(getString(R.string.upload_avatar_failed));
+                                        }
+                                    }
+                                });
+
+                            }
+                        });
+                    }
+                });
     }
 
     private void handelEditProfileDriver(AlertDialog.Builder editProfileDialog) {
         editProfileDialog.setPositiveButton(getString(R.string.edit_button_dilog), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                // close the dialog and ...
-                dialog.dismiss();
+                loading.show();
+
+                String name = Objects.requireNonNull(nameEditText.getText()).toString();
+                String email = Objects.requireNonNull(emailEditText.getText()).toString();
+                String phone = Objects.requireNonNull(phoneEditText.getText()).toString();
+
+                Map<String, Object> driverInfor = new HashMap<>();
+
+                if (CommonUtils.validateName(name)) {
+                    driverInfor.put(NAME_KEY, name);
+                }
+
+                if (CommonUtils.validateEmail(email)) {
+                    driverInfor.put(EMAIL_KEY, email);
+                }
+
+                if (CommonUtils.validatePhone(phone)) {
+                    driverInfor.put(PHONE_KEY, phone);
+                }
+
+                driverTable.updateChildren(driverInfor).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        loading.dismiss();
+
+                        if (task.isSuccessful()) {
+                            showSnackBar(getString(R.string.update_infor_success));
+                            // update information in navigation drawer.
+                            updateInforDriver();
+                        } else {
+                            showSnackBar(getString(R.string.update_infor_failed));
+                        }
+                    }
+                });
+
             }
         }).setNegativeButton(getString(R.string.cancel_button_dialog), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 // close dialog and cancel update profile of driver.
+                dialog.dismiss();
             }
         });
 

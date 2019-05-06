@@ -72,5 +72,11 @@
     <string name="edit_profile_message">Please fill all information</string>
     <string name="edit_button_dilog">Edit</string>
     <string name="cancel_button_dialog">cancel</string>
+    <string name="error_upload_image">error upload image</string>
+    <string name="permission_denied">permission_denied</string>
+    <string name="upload_avatar_success">upload avatar success</string>
+    <string name="upload_avatar_failed">upload avatar failed</string>
+    <string name="update_infor_success">update infor sucess</string>
+    <string name="update_infor_failed">update infor failed</string>
 
 </resources>
