@@ -156,7 +156,6 @@ public class DriverActivity extends AppCompatActivity
     private SwitchCompat stateDriverSwitch;
     private EditText destinationEditText;
     private ProgressBar driverProgressBar;
-    private Button findUserButton;
     private Toolbar toolbar;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
@@ -245,7 +244,6 @@ public class DriverActivity extends AppCompatActivity
         stateDriverSwitch = findViewById(R.id.state_driver_switch);
         destinationEditText = findViewById(R.id.destination_edit_text);
         driverProgressBar = findViewById(R.id.driver_progress_bar);
-        findUserButton = findViewById(R.id.find_user_button);
     }
 
     private void setupUI() {

@@ -17,12 +17,12 @@
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            map:layout_constraintBottom_toTopOf="@id/driver_card_view"
+            map:layout_constraintBottom_toBottomOf="parent"
             map:layout_constraintEnd_toEndOf="parent"
             map:layout_constraintStart_toStartOf="parent"
             map:layout_constraintTop_toTopOf="parent" />
 
-        <android.support.v7.widget.CardView
+        <!--<android.support.v7.widget.CardView
             android:id="@+id/driver_card_view"
             android:layout_width="0dp"
             android:layout_height="100dp"
@@ -46,7 +46,7 @@
 
             </RelativeLayout>
 
-        </android.support.v7.widget.CardView>
+        </android.support.v7.widget.CardView>-->
 
     </android.support.constraint.ConstraintLayout>
 
