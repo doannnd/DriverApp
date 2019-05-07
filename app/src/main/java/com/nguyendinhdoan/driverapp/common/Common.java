@@ -10,6 +10,10 @@ import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
 import com.nguyendinhdoan.driverapp.remote.RetrofitClient;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class Common {
 
     public static Location currentLocation;
@@ -32,6 +36,18 @@ public class Common {
     private static final String URL_QUERY_PARAM_ORIGIN_KEY = "origin";
     private static final String URL_QUERY_PARAM_DESTINATION_KEY = "destination";
     private static final String URL_QUERY_PARAM_API_KEY = "key";
+
+
+    public static final double BASE_FARE = 2.5; // 2.55$
+    private static final double COST_PER_MINUTES = 0.35; // 0.35$
+    private static final double COST_PER_KM = 1.75; // 1.75$
+
+    // ==> formula = BASE_FARE + (COST_PER_MINUTES * MINUTES) + (COST_PER_KM * KM)
+    // with uber - USER_FEE + OTHER_FEE but basic application ==> remove this
+
+    public static double getPrice(double km, int minutes) {
+        return BASE_FARE + (COST_PER_MINUTES * minutes) + (COST_PER_KM * km);
+    }
 
     public static IGoogleAPI getGoogleAPI() {
         return RetrofitClient.getClient(baseURL).create(IGoogleAPI.class);
@@ -56,5 +72,11 @@ public class Common {
                 + "," + destinationPosition.longitude)
                 .appendQueryParameter(URL_QUERY_PARAM_API_KEY, API_KEY)
                 .build().toString();
+    }
+
+    public static String currentDate() {
+        Date date = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEEE, dd/MM/yyyy", Locale.getDefault());
+        return simpleDateFormat.format(date);
     }
 }

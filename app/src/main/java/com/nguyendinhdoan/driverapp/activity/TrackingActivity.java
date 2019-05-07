@@ -1,8 +1,10 @@
 package com.nguyendinhdoan.driverapp.activity;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -11,9 +13,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ProgressBar;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -29,7 +30,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
@@ -65,12 +65,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class TrackingActivity extends FragmentActivity implements OnMapReadyCallback {
+public class TrackingActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
 
     private static final String TAG = "TrackingActivity";
     public static final long LOCATION_REQUEST_INTERVAL = 5000L;
@@ -86,10 +87,28 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     private static final float CIRCLE_STROKE_WIDTH = 5.0F;
     private static final int CIRCLE_FILL_COLOR = 0x220000FF;
 
+    private static final String LOCATION_ADDRESS = "LOCATION_ADDRESS_KEY";
+    private static final String DESTINATION_ADDRESS = "DESTINATION_ADDRESS_KEY";
+    private static final String DIRECTION_LEGS_KEY = "legs";
+    private static final String DIRECTION_DURATION_KEY = "duration";
+    private static final String DIRECTION_DISTANCE_KEY = "distance";
+    private static final String DIRECTION_ADDRESS_KEY = "end_address";
+    private static final String DIRECTION_TEXT_KEY = "text";
+    private static final String START_ADDRESS_KEY = "start_address";
+
+
+    public static final String START_ADDRESS_INTENT_KEY = "START_ADDRESS_INTENT_KEY";
+    public static final String END_ADDRESS_INTENT_KEY = "END_ADDRESS_INTENT_KEY";
+    public static final String TIME_INTENT_KEY = "TIME_INTENT_KEY";
+    public static final String DISTANCE_INTENT_KEY = "DISTANCE_INTENT_KEY";
+    public static final String TOTAL_INTENT_KEY = "TOTAL_INTENT_KEY";
+    public static final String LOCATION_START_INTENT_KEY = "LOCATION_START_INTENT_KEY";
+    public static final String LOCATION_END_INTENT_KEY = "LOCATION_END_INTENT_KEY";
+
 
     private ProgressBar loadingProgressBar;
-
     private GoogleMap mTrackingMap;
+    private Button startTripButton;
 
     private double latitudeUser;
     private double longitudeUser;
@@ -105,6 +124,8 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     private IFirebaseMessagingAPI mFirebaseService;
     private List<LatLng> directionPolylineList;
 
+    private Location pickupLocation;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,10 +134,16 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
         initViews();
         initGoogleMap();
         setupUI();
+        addEvents();
+    }
+
+    private void addEvents() {
+        startTripButton.setOnClickListener(this);
     }
 
     private void initViews() {
         loadingProgressBar = findViewById(R.id.loading_progress_bar);
+        startTripButton = findViewById(R.id.start_trip_button);
     }
 
     private void setupUI() {
@@ -136,7 +163,7 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
 
     private void initGoogleMap() {
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+                .findFragmentById(R.id.trip_detail_map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
@@ -288,7 +315,7 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
 
         // handle information display of direction gray polyline
         PolylineOptions grayPolylineOptions = new PolylineOptions();
-        grayPolylineOptions.color(Color.GRAY);
+        grayPolylineOptions.color(Color.BLACK);
         grayPolylineOptions.width(POLYLINE_WIDTH);
         grayPolylineOptions.startCap(new SquareCap());
         grayPolylineOptions.endCap(new SquareCap());
@@ -322,10 +349,10 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
 
     private void showSnackBar(String message) {
         Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT);
-        View view = snackbar.getView();
+       /* View view = snackbar.getView();
         view.setBackgroundColor(getResources().getColor(R.color.colorWhite));
         TextView textSnack = view.findViewById(android.support.design.R.id.snackbar_text);
-        textSnack.setTextColor(getResources().getColor(R.color.colorBlack));
+        textSnack.setTextColor(getResources().getColor(R.color.colorBlack));*/
         snackbar.show();
     }
 
@@ -365,6 +392,7 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
             public void onKeyEntered(String key, GeoLocation location) {
                 // if driver in radius = 50m --> notification for user ....
                 sendNotificationArrivedToUser(userId);
+                startTripButton.setEnabled(true);
             }
 
             @Override
@@ -427,5 +455,92 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
                         Log.e(TAG, "onCancelled: error" + databaseError);
                     }
                 });
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.start_trip_button) {
+            if (startTripButton.getText().equals("START TRIP")) {
+                pickupLocation = Common.currentLocation;
+                startTripButton.setText(getString(R.string.drop_off_here));
+            } else if (startTripButton.getText().equals("DROP OFF HERE")) {
+                calculateCashFee(pickupLocation, Common.currentLocation);
+            }
+        }
+    }
+
+    private void calculateCashFee(final Location pickupLocation, Location currentLocation) {
+        try {
+            String calculateURL = Common.directionURL(
+                    new LatLng(pickupLocation.getLatitude(), pickupLocation.getLongitude())
+                    , new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
+
+            mServices.getDirectionPath(calculateURL)
+                    .enqueue(new Callback<String>() {
+                        @Override
+                        public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
+                            try {
+                                JSONObject root = new JSONObject(response.body());
+                                JSONArray routes = root.getJSONArray(DIRECTION_ROUTES_KEY);
+                                JSONObject routeObject = routes.getJSONObject(0);
+                                JSONArray legs = routeObject.getJSONArray(DIRECTION_LEGS_KEY);
+                                JSONObject legObject = legs.getJSONObject(0);
+
+                                // get time and display on time text view
+                                JSONObject time = legObject.getJSONObject(DIRECTION_DURATION_KEY);
+                                String minutes = time.getString(DIRECTION_TEXT_KEY);
+                                Log.d(TAG, "minutes: " + time.getString(DIRECTION_TEXT_KEY));
+
+                                int timeFormatted = Integer.parseInt(minutes.replaceAll("\\D+", ""));
+
+                                // get distance and display on distance text view
+                                JSONObject distance = legObject.getJSONObject(DIRECTION_DISTANCE_KEY);
+                                String km = distance.getString(DIRECTION_TEXT_KEY);
+                                Log.d(TAG, "km: " + distance.getString(DIRECTION_TEXT_KEY));
+
+                                double distanceFormatted = Double.parseDouble(km.replaceAll("[^0-9\\\\.]", ""));
+
+                                /*String finalPrice = String.format(Locale.getDefault(), "%s km + %s minute = $%.2f", distanceFormatted, timeFormatted,
+                                        Common.getPrice(distanceFormatted, timeFormatted));*/
+
+                                // get end address and display on address text view
+                                String destinationAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
+                                String locationAddress = legObject.getString(START_ADDRESS_KEY);
+                                Log.d(TAG, "destination address: " + destinationAddress);
+                                Log.d(TAG, "location address: " + locationAddress);
+
+                                Intent intentTripDetail = new Intent(TrackingActivity.this, TripDetailActivity.class);
+                                intentTripDetail.putExtra(START_ADDRESS_INTENT_KEY, locationAddress);
+                                intentTripDetail.putExtra(END_ADDRESS_INTENT_KEY, destinationAddress);
+                                intentTripDetail.putExtra(TIME_INTENT_KEY, String.valueOf(timeFormatted));
+                                intentTripDetail.putExtra(DISTANCE_INTENT_KEY, String.valueOf(distanceFormatted));
+                                intentTripDetail.putExtra(TOTAL_INTENT_KEY, String.valueOf(Common.getPrice(distanceFormatted, timeFormatted)));
+                                intentTripDetail.putExtra(LOCATION_START_INTENT_KEY,
+                                        String.format(Locale.getDefault(), "%f,%f",
+                                                pickupLocation.getLatitude(), pickupLocation.getLongitude())
+                                );
+                                intentTripDetail.putExtra(LOCATION_END_INTENT_KEY,
+                                        String.format(Locale.getDefault(), "%f,%f",
+                                                Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude())
+                                );
+
+                                intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intentTripDetail);
+                                finish();
+
+
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+                            Log.e(TAG, "error load information user : time, distance, address");
+                        }
+                    });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
