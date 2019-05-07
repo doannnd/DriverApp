@@ -33,7 +33,6 @@ public class TripDetailActivity extends FragmentActivity implements OnMapReadyCa
 
         initGoogleMap();
         initViews();
-        setupUI();
     }
 
     private void setupUI() {
@@ -87,5 +86,7 @@ public class TripDetailActivity extends FragmentActivity implements OnMapReadyCa
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        setupUI();
     }
 }
