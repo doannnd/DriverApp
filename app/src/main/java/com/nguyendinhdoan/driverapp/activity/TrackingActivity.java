@@ -457,6 +457,45 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
                 });
     }
 
+    private void sendDropOffNotification(final String userId) {
+        DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
+
+        tokenTable.orderByKey().equalTo(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            Token token = postSnapshot.getValue(Token.class);
+
+                            Notification notification = new Notification("DropOff", userId);
+                            if (token != null) {
+                                Sender sender = new Sender(notification, token.getToken());
+
+                                mFirebaseService.sendMessage(sender)
+                                        .enqueue(new Callback<Result>() {
+                                            @Override
+                                            public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
+                                                if (response.isSuccessful()) {
+                                                    Log.d(TAG, "onResponse: success send notification");
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull Call<Result> call, @NonNull Throwable t) {
+                                                Log.e(TAG, "onFailure: error" + t.getMessage());
+                                            }
+                                        });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
+    }
+
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.start_trip_button) {
@@ -508,6 +547,9 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
                                 String locationAddress = legObject.getString(START_ADDRESS_KEY);
                                 Log.d(TAG, "destination address: " + destinationAddress);
                                 Log.d(TAG, "location address: " + locationAddress);
+
+                                // send notification to user
+                                sendDropOffNotification(userId);
 
                                 Intent intentTripDetail = new Intent(TrackingActivity.this, TripDetailActivity.class);
                                 intentTripDetail.putExtra(START_ADDRESS_INTENT_KEY, locationAddress);

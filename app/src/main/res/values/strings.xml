@@ -70,7 +70,7 @@
     <string name="menu_edit_profile">Edit profile</string>
     <string name="edit_profile">Update</string>
     <string name="edit_profile_message">Please fill all information</string>
-    <string name="edit_button_dilog">Edit</string>
+    <string name="edit_button_dialog">Edit</string>
     <string name="cancel_button_dialog">Cancel</string>
     <string name="error_upload_image">error upload image</string>
     <string name="permission_denied">permission_denied</string>

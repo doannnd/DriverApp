@@ -18,7 +18,6 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
-import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -32,7 +31,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
-import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -53,7 +51,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -164,7 +161,7 @@ public class DriverActivity extends AppCompatActivity
     private TextInputEditText emailEditText;
     private TextInputEditText nameEditText;
     private TextInputEditText phoneEditText;
-    private TextInputLayout layoutName, layoutPhone, layoutEmail;
+    //private TextInputLayout layoutName, layoutPhone, layoutEmail;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
@@ -279,6 +276,7 @@ public class DriverActivity extends AppCompatActivity
         View headerView = navigationView.getHeaderView(0);
         final TextView nameTextView = headerView.findViewById(R.id.name_text_view);
         final TextView emailTextView = headerView.findViewById(R.id.email_text_view);
+        final TextView starTextView = headerView.findViewById(R.id.star_text_view);
         final CircleImageView avatarImageView = headerView.findViewById(R.id.avatar_image_view);
 
         FirebaseUser driver = FirebaseAuth.getInstance().getCurrentUser();
@@ -297,8 +295,9 @@ public class DriverActivity extends AppCompatActivity
                     if (Common.currentDriver != null) {
                         nameTextView.setText(Common.currentDriver.getName());
                         emailTextView.setText(Common.currentDriver.getEmail());
+                        starTextView.setText(Common.currentDriver.getRates());
                         Glide.with(DriverActivity.this).load(Common.currentDriver.getAvatarUrl())
-                                .placeholder(R.drawable.ic_nav)
+                                .placeholder(R.drawable.ic_profile)
                                 .into(avatarImageView);
                     }
 
@@ -886,16 +885,16 @@ public class DriverActivity extends AppCompatActivity
         phoneEditText = view.findViewById(R.id.phone_edit_text);
         uploadImageView = view.findViewById(R.id.upload_image_view);
 
-        layoutEmail = view.findViewById(R.id.layout_email_profile);
+       /* layoutEmail = view.findViewById(R.id.layout_email_profile);
         layoutName = view.findViewById(R.id.layout_name_profile);
-        layoutPhone = view.findViewById(R.id.layout_phone_profile);
+        layoutPhone = view.findViewById(R.id.layout_phone_profile);*/
 
         // display information of driver ==> ui
         emailEditText.setText(Common.currentDriver.getEmail());
         nameEditText.setText(Common.currentDriver.getName());
         phoneEditText.setText(Common.currentDriver.getPhone());
         Glide.with(DriverActivity.this).load(Common.currentDriver.getAvatarUrl())
-                .placeholder(R.drawable.ic_nav)
+                .placeholder(R.drawable.ic_profile)
                 .into(uploadImageView);
 
         // upload image from your phone
@@ -1041,7 +1040,7 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void handelEditProfileDriver(AlertDialog.Builder editProfileDialog) {
-        editProfileDialog.setPositiveButton(getString(R.string.edit_button_dilog), new DialogInterface.OnClickListener() {
+        editProfileDialog.setPositiveButton(getString(R.string.edit_button_dialog), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 loading.show();
@@ -1101,4 +1100,11 @@ public class DriverActivity extends AppCompatActivity
         finish();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (polyLineAnimator != null) {
+            polyLineAnimator.cancel();
+        }
+    }
 }
