@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
@@ -31,11 +32,13 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
@@ -51,6 +54,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -121,7 +125,7 @@ import retrofit2.Response;
 
 public class DriverActivity extends AppCompatActivity
         implements OnMapReadyCallback, CompoundButton.OnCheckedChangeListener,
-        View.OnTouchListener, NavigationView.OnNavigationItemSelectedListener {
+        View.OnTouchListener, NavigationView.OnNavigationItemSelectedListener, View.OnClickListener {
 
     public static final String TAG = "DRIVER_ACTIVITY";
     public static final String DRIVER_LOCATION_TABLE_NAME = "driver_location";
@@ -156,12 +160,14 @@ public class DriverActivity extends AppCompatActivity
     private Toolbar toolbar;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
-    private ActionBarDrawerToggle drawerToggle;
     private ImageView uploadImageView;
     private TextInputEditText emailEditText;
     private TextInputEditText nameEditText;
     private TextInputEditText phoneEditText;
-    //private TextInputLayout layoutName, layoutPhone, layoutEmail;
+    //private TextInputLayout layoutName, layoutPhone, layoutEmail
+    private Button pauseDirectionButton;
+    private Button stopDirectionButton;
+    private FloatingActionButton startDirectionButton;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
@@ -184,6 +190,7 @@ public class DriverActivity extends AppCompatActivity
     private StorageReference storageReference;
     private DatabaseReference driverTable;
     private LatLng destinationLocation;
+    private String destination;
     private ValueAnimator polyLineAnimator;
 
     private int index = -1;
@@ -232,6 +239,9 @@ public class DriverActivity extends AppCompatActivity
         stateDriverSwitch.setOnCheckedChangeListener(this);
         destinationEditText.setOnTouchListener(this);
         navigationView.setNavigationItemSelectedListener(this);
+        pauseDirectionButton.setOnClickListener(this);
+        stopDirectionButton.setOnClickListener(this);
+        startDirectionButton.setOnClickListener(this);
     }
 
     private void initViews() {
@@ -241,6 +251,9 @@ public class DriverActivity extends AppCompatActivity
         stateDriverSwitch = findViewById(R.id.state_driver_switch);
         destinationEditText = findViewById(R.id.destination_edit_text);
         driverProgressBar = findViewById(R.id.driver_progress_bar);
+        pauseDirectionButton = findViewById(R.id.pause_direction_button);
+        stopDirectionButton = findViewById(R.id.stop_direction_button);
+        startDirectionButton = findViewById(R.id.start_direction_button);
     }
 
     private void setupUI() {
@@ -264,7 +277,7 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void setupNavigationView() {
-        drawerToggle = new ActionBarDrawerToggle(
+        ActionBarDrawerToggle drawerToggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(drawerToggle);
         drawerToggle.syncState();
@@ -500,7 +513,7 @@ public class DriverActivity extends AppCompatActivity
         driverProgressBar.setVisibility(View.INVISIBLE);
 
         // check current location change
-        if (directionPolylineList.size() != 0) {
+        if (directionPolylineList != null) {
             driverMap.clear();
 
             // add new marker
@@ -561,7 +574,7 @@ public class DriverActivity extends AppCompatActivity
             FirebaseDatabase.getInstance().goOnline();
 
             showSnackBar(getString(R.string.you_are_online));
-            driverProgressBar.setVisibility(View.VISIBLE);
+            driverProgressBar.setVisibility(View.GONE);
             startLocationUpdates();
         } else {
 
@@ -572,9 +585,9 @@ public class DriverActivity extends AppCompatActivity
             stopLocationUpdates();
             // clear
             driverMap.clear();
-            /*if (handler != null) {
+            if (handler != null) {
                 handler.removeCallbacks(drawPathRunnable);
-            }*/
+            }
             // if marker exist --> delete
             if (driverMarker != null) {
                 driverMarker.remove();
@@ -584,6 +597,8 @@ public class DriverActivity extends AppCompatActivity
                 polyLineAnimator.cancel();
             }
 
+            destinationEditText.setText("");
+            directionPolylineList = null;
         }
     }
 
@@ -598,9 +613,9 @@ public class DriverActivity extends AppCompatActivity
 
     private void handleDriverDirection(LatLng destinationLocation) {
 
-        driverProgressBar.setVisibility(View.VISIBLE);
+        //driverProgressBar.setVisibility(View.VISIBLE);
 
-        if (directionPolylineList.size() != 0) {
+        if (directionPolylineList != null) {
             driverMap.clear();
 
             // add new marker
@@ -738,24 +753,26 @@ public class DriverActivity extends AppCompatActivity
         polyLineAnimator.start();
 
         // hide loading
-        driverProgressBar.setVisibility(View.GONE);
+        //driverProgressBar.setVisibility(View.GONE);
         // add marker animate on direction polyline
-       /* carMarker = driverMap.addMarker(
-                new MarkerOptions().position(currentPosition)
-                        .flat(true)
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
-        );*/
 
         // show detail animate direction polyline
         //displayDetailDirectionPolyline();
     }
 
-   /* private void displayDetailDirectionPolyline() {
+    private void displayDetailDirectionPolyline() {
+        // add marker for direction detail
+        carMarker = driverMap.addMarker(
+                new MarkerOptions().position(
+                        new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude()))
+                        .flat(true)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
+        );
         handler = new Handler();
         handler.postDelayed(drawPathRunnable, DRAW_PATH_TIME_OUT);
-    }*/
+    }
 
-  /*  Runnable drawPathRunnable = new Runnable() {
+    Runnable drawPathRunnable = new Runnable() {
         @Override
         public void run() {
             if (index < directionPolylineList.size() - 1) {
@@ -793,9 +810,9 @@ public class DriverActivity extends AppCompatActivity
             valueAnimator.start();
             handler.postDelayed(this, 3000);
         }
-    };*/
+    };
 
-   /* private float getBearing(LatLng startPosition, LatLng endPosition) {
+    private float getBearing(LatLng startPosition, LatLng endPosition) {
         double lat = Math.abs(startPosition.latitude - endPosition.latitude);
         double lng = Math.abs(startPosition.longitude - endPosition.longitude);
 
@@ -813,7 +830,7 @@ public class DriverActivity extends AppCompatActivity
             return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 270);
         }
         return -1;
-    }*/
+    }
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
@@ -944,7 +961,7 @@ public class DriverActivity extends AppCompatActivity
                 if (stateDriverSwitch.isChecked()) { // if driver online --> working
 
                     Place place = Autocomplete.getPlaceFromIntent(data);
-                    String destination = place.getName();
+                    destination = place.getName();
                     destinationLocation = place.getLatLng();
                     Log.d(TAG, " place address: " + place.getAddress());
                     Log.d(TAG, "place name: " + place.getName());
@@ -1105,6 +1122,34 @@ public class DriverActivity extends AppCompatActivity
         super.onDestroy();
         if (polyLineAnimator != null) {
             polyLineAnimator.cancel();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.start_direction_button: {
+                if (destination != null) {
+                    displayDetailDirectionPolyline();
+                }
+                break;
+            }
+            case R.id.pause_direction_button: {
+                if (handler != null) {
+                    handler.removeCallbacks(drawPathRunnable);
+                }
+                break;
+            }
+            case R.id.stop_direction_button: {
+                driverMap.clear();
+
+                if (handler != null) {
+                    handler.removeCallbacks(drawPathRunnable);
+                }
+                // call display current location
+                displayCurrentLocation();
+                break;
+            }
         }
     }
 }
