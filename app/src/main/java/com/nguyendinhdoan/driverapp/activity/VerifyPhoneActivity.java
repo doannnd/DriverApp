@@ -239,7 +239,6 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                         if (task.isSuccessful()) {
                             // save previous, after jump to driver screen
                             //Common.currentDriver = driver;
-
                             saveDriverInDatabase(driver);
                             // save current driver to send notification have driver name to user app
 

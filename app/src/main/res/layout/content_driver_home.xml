@@ -35,24 +35,15 @@
             map:layout_constraintTop_toBottomOf="@id/driver_map">
 
             <Button
-                android:id="@+id/pause_direction_button"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@drawable/bg_button_login"
-                android:text="@string/pause_button_text"
-                android:textColor="@android:color/white"
-                tools:ignore="ButtonStyle" />
-
-            <Button
                 android:id="@+id/stop_direction_button"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:background="@drawable/bg_button_stop"
+                android:background="@drawable/bg_button_login"
                 android:text="@string/stop_button_text"
                 android:textColor="@android:color/white"
+                android:enabled="false"
                 tools:ignore="ButtonStyle" />
 
         </LinearLayout>

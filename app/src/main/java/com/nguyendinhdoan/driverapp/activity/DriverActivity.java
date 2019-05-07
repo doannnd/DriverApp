@@ -165,7 +165,6 @@ public class DriverActivity extends AppCompatActivity
     private TextInputEditText nameEditText;
     private TextInputEditText phoneEditText;
     //private TextInputLayout layoutName, layoutPhone, layoutEmail
-    private Button pauseDirectionButton;
     private Button stopDirectionButton;
     private FloatingActionButton startDirectionButton;
 
@@ -239,7 +238,6 @@ public class DriverActivity extends AppCompatActivity
         stateDriverSwitch.setOnCheckedChangeListener(this);
         destinationEditText.setOnTouchListener(this);
         navigationView.setNavigationItemSelectedListener(this);
-        pauseDirectionButton.setOnClickListener(this);
         stopDirectionButton.setOnClickListener(this);
         startDirectionButton.setOnClickListener(this);
     }
@@ -251,7 +249,6 @@ public class DriverActivity extends AppCompatActivity
         stateDriverSwitch = findViewById(R.id.state_driver_switch);
         destinationEditText = findViewById(R.id.destination_edit_text);
         driverProgressBar = findViewById(R.id.driver_progress_bar);
-        pauseDirectionButton = findViewById(R.id.pause_direction_button);
         stopDirectionButton = findViewById(R.id.stop_direction_button);
         startDirectionButton = findViewById(R.id.start_direction_button);
     }
@@ -869,7 +866,11 @@ public class DriverActivity extends AppCompatActivity
                 break;
             }
             case R.id.nav_edit_profile: {
-                showDialogUpdateProfile();
+                if (stateDriverSwitch.isChecked()) {
+                    showDialogUpdateProfile();
+                } else {
+                    showSnackBar(getString(R.string.please_change_state_you));
+                }
                 break;
             }
             case R.id.nav_way_bill: {
@@ -1109,6 +1110,13 @@ public class DriverActivity extends AppCompatActivity
     }
 
     private void signOut() {
+        // remove location if
+        FirebaseUser driver = driverAuth.getCurrentUser();
+        if (driver != null) {
+            String driverId = driver.getUid();
+            FirebaseDatabase.getInstance().getReference(DRIVER_LOCATION_TABLE_NAME).child(driverId).removeValue();
+        }
+
         driverAuth.signOut();
         // jump to login activity
         Intent intentLogin = LoginActivity.start(this);
@@ -1131,23 +1139,28 @@ public class DriverActivity extends AppCompatActivity
             case R.id.start_direction_button: {
                 if (destination != null) {
                     displayDetailDirectionPolyline();
-                }
-                break;
-            }
-            case R.id.pause_direction_button: {
-                if (handler != null) {
-                    handler.removeCallbacks(drawPathRunnable);
+                    stopDirectionButton.setEnabled(true);
                 }
                 break;
             }
             case R.id.stop_direction_button: {
+
                 driverMap.clear();
 
                 if (handler != null) {
+
                     handler.removeCallbacks(drawPathRunnable);
+                    // call display current location
+                    //displayCurrentLocation();
                 }
-                // call display current location
-                displayCurrentLocation();
+
+                destination = null;
+
+                // if marker exist --> delete
+                if (driverMarker != null) {
+                    driverMarker.remove();
+                }
+
                 break;
             }
         }
