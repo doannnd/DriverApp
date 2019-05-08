@@ -3,6 +3,7 @@ package com.nguyendinhdoan.driverapp.activity;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -52,12 +53,16 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     public static final String LNG_USER = "LNG_USER";
     public static final String ID_USER = "ID_USER";
 
+    public static final long COUNT_DOWN_INTERVAL = 1000;
+    public static final long INITIAL_COUNT_DOWN = 30000;
+
     private ImageView mapImageView;
     private TextView timeTextView;
     private TextView distanceTextView;
     private TextView addressTextView;
     private Button acceptButton;
     private Button declineButton;
+    private TextView timeLeftTextView;
 
     private MediaPlayer mediaPlayer;
     private IGoogleAPI mGoogleService;
@@ -67,6 +72,9 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     private double latitudeUser;
     private double longitudeUser;
 
+    private CountDownTimer countDownTimer;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,6 +83,27 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         initViews();
         setupUI();
         addEvent();
+
+        setupCountDownTimer();
+    }
+
+    private void setupCountDownTimer() {
+        countDownTimer = new CountDownTimer(INITIAL_COUNT_DOWN, COUNT_DOWN_INTERVAL) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                long timeLeft = millisUntilFinished / 1000;
+                timeLeftTextView.setText(String.valueOf(timeLeft));
+            }
+
+            @Override
+            public void onFinish() {
+                if (userId != null) {
+                    cancelBooking(userId);
+                } else {
+                    Toast.makeText(UserCallActivity.this, "user id must be not null", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }.start();
     }
 
     private void addEvent() {
@@ -169,6 +198,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         addressTextView = findViewById(R.id.address_text_view);
         acceptButton = findViewById(R.id.accept_button);
         declineButton = findViewById(R.id.decline_button);
+        timeLeftTextView = findViewById(R.id.time_left_text_view);
     }
 
     @Override
@@ -292,5 +322,11 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                         Log.e(TAG, "onCancelled: error" + databaseError);
                     }
                 });
+    }
+
+    @Override
+    protected void onDestroy() {
+        countDownTimer.cancel();
+        super.onDestroy();
     }
 }
