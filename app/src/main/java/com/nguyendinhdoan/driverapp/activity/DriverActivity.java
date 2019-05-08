@@ -1127,10 +1127,24 @@ public class DriverActivity extends AppCompatActivity
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+        FirebaseDatabase.getInstance().goOffline();
+
+        stopLocationUpdates();
+        // clear
+        driverMap.clear();
+        if (handler != null) {
+            handler.removeCallbacks(drawPathRunnable);
+        }
+        // if marker exist --> delete
+        if (driverMarker != null) {
+            driverMarker.remove();
+        }
+
         if (polyLineAnimator != null) {
             polyLineAnimator.cancel();
         }
+
+        super.onDestroy();
     }
 
     @Override

@@ -489,7 +489,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                             Token token = postSnapshot.getValue(Token.class);
 
                             String bodyMessage = String.format("The driver %s has arrived at your location", Common.currentDriver.getName());
-                            Notification notification = new Notification("accept", bodyMessage);
+                            Notification notification = new Notification("Arrived", bodyMessage);
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 

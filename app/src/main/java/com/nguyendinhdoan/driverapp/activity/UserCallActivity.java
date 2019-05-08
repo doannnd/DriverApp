@@ -197,10 +197,51 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                 break;
             }
             case R.id.accept_button: {
+                acceptBooking(userId);
                 openTrackingActivity();
                 break;
             }
         }
+    }
+
+    private void acceptBooking(String userId) {
+        DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
+
+        tokenTable.orderByKey().equalTo(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            Token token = postSnapshot.getValue(Token.class);
+
+                            String bodyMessage = String.format("The driver %s is moving to your location", Common.currentDriver.getName());
+                            Notification notification = new Notification("accept", bodyMessage);
+                            if (token != null) {
+                                Sender sender = new Sender(notification, token.getToken());
+
+                                mFirebaseService.sendMessage(sender)
+                                        .enqueue(new Callback<Result>() {
+                                            @Override
+                                            public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
+                                                if (response.isSuccessful()) {
+                                                    Log.d(TAG, "onResponse: success send notification");
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull Call<Result> call, @NonNull Throwable t) {
+                                                Log.e(TAG, "onFailure: error" + t.getMessage());
+                                            }
+                                        });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
     }
 
     private void openTrackingActivity() {
