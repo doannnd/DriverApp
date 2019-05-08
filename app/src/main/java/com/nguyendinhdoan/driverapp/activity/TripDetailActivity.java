@@ -2,6 +2,9 @@ package com.nguyendinhdoan.driverapp.activity;
 
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -23,6 +26,8 @@ public class TripDetailActivity extends FragmentActivity implements OnMapReadyCa
     private TextView timeTextView, baseFareTextView;
     private TextView feeTextView, estimatedPayoutTextView;
     private TextView fromTextView, toTextView;
+    private ImageView backImageView;
+    private TextView starUserTextView;
 
     private GoogleMap mMap;
 
@@ -39,8 +44,8 @@ public class TripDetailActivity extends FragmentActivity implements OnMapReadyCa
         dateTextView.setText(Common.currentDate());
 
         if (getIntent() != null) {
-            feeTextView.setText(String.format(Locale.getDefault(), "$ %s", getIntent().getStringExtra(TrackingActivity.TOTAL_INTENT_KEY)));
-            estimatedPayoutTextView.setText(String.format(Locale.getDefault(), "$ %s", getIntent().getStringExtra(TrackingActivity.TOTAL_INTENT_KEY)));
+            feeTextView.setText(String.format(Locale.getDefault(), "$ %.2f", getIntent().getDoubleExtra(TrackingActivity.TOTAL_INTENT_KEY, 0.0)));
+            estimatedPayoutTextView.setText(String.format(Locale.getDefault(), "$ %.2f", getIntent().getDoubleExtra(TrackingActivity.TOTAL_INTENT_KEY, 0.0)));
             baseFareTextView.setText(String.format(Locale.getDefault(), "$ %.2f", Common.BASE_FARE));
             timeTextView.setText(String.format(Locale.getDefault(), "%s minute", getIntent().getStringExtra(TrackingActivity.TIME_INTENT_KEY)));
             distanceTextView.setText(String.format(Locale.getDefault(), "%s km", getIntent().getStringExtra(TrackingActivity.DISTANCE_INTENT_KEY)));
@@ -58,7 +63,7 @@ public class TripDetailActivity extends FragmentActivity implements OnMapReadyCa
             );
             marker.showInfoWindow();
 
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(dropOffLocation, 15.0f));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(dropOffLocation, 12.0f));
         }
 
     }
@@ -72,6 +77,8 @@ public class TripDetailActivity extends FragmentActivity implements OnMapReadyCa
         estimatedPayoutTextView = findViewById(R.id.estimated_payout_text_view);
         fromTextView = findViewById(R.id.from_text_view);
         toTextView = findViewById(R.id.to_text_view);
+        backImageView = findViewById(R.id.back_image_view);
+        starUserTextView = findViewById(R.id.star_user_text_view);
     }
 
     private void initGoogleMap() {
@@ -88,5 +95,10 @@ public class TripDetailActivity extends FragmentActivity implements OnMapReadyCa
         mMap = googleMap;
 
         setupUI();
+        setupMap();
+    }
+
+    private void setupMap() {
+        mMap.getUiSettings().setZoomControlsEnabled(true);
     }
 }

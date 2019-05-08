@@ -62,10 +62,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        map:cardCornerRadius="5dp"
-        map:layout_constraintEnd_toEndOf="parent"
-        map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toTopOf="parent">
+        map:cardCornerRadius="5dp">
 
         <EditText
             android:id="@+id/destination_edit_text"

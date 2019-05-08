@@ -91,5 +91,11 @@
     <string name="stop_button_text">stop direction</string>
     <string name="start_direction_detail">START</string>
     <string name="pause_button_text">pause direction</string>
+    <string name="detail_user_image_view">detail user image view</string>
+    <string name="direction_image_view">direction image view</string>
+    <string name="direction_text">DIRECTIONAL</string>
+    <string name="trip_detail_text">Trip Detail</string>
+    <string name="back_icon">back icon</string>
+    <string name="star_user_text">STAR USER</string>
 
 </resources>

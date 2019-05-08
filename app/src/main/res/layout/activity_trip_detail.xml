@@ -6,6 +6,39 @@
     android:layout_height="match_parent"
     tools:context=".activity.TripDetailActivity">
 
+    <android.support.v7.widget.CardView
+        android:id="@+id/toolbar_trip_detail"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        map:cardBackgroundColor="@android:color/white"
+        map:layout_constraintEnd_toEndOf="parent"
+        map:layout_constraintStart_toStartOf="parent"
+        map:layout_constraintTop_toTopOf="parent"
+        map:layout_constraintBottom_toTopOf="@id/layout_detail">
+
+        <ImageView
+            android:id="@+id/back_image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center_vertical"
+            android:layout_marginStart="16dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/back_icon"
+            android:src="@drawable/ic_back"/>
+
+        <TextView
+            android:id="@+id/star_user_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="16dp"
+            android:fontFamily="@font/amaranth"
+            android:textColor="@android:color/black"
+            android:textSize="20sp"
+            android:text="@string/star_user_text"/>
+
+    </android.support.v7.widget.CardView>
+
     <LinearLayout
         android:id="@+id/layout_detail"
         android:layout_width="0dp"
@@ -14,7 +47,7 @@
         map:layout_constraintBottom_toTopOf="@id/trip_detail_map"
         map:layout_constraintEnd_toEndOf="parent"
         map:layout_constraintStart_toStartOf="parent"
-        map:layout_constraintTop_toTopOf="parent"
+        map:layout_constraintTop_toBottomOf="@id/toolbar_trip_detail"
         map:layout_constraintVertical_weight="7">
 
         <TextView
@@ -53,7 +86,7 @@
             android:fontFamily="@font/amaranth"
             android:textColor="@android:color/holo_green_dark"
             android:textSize="20sp"
-            tools:text="Trip Detail" />
+            android:text="@string/trip_detail_text" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -203,11 +236,13 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="9"
-                android:gravity="end"
+                android:gravity="start"
                 android:fontFamily="@font/amaranth"
                 tools:text="Me Linh, Ha Noi, Viet Nam"
                 android:textColor="@android:color/black"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:maxLines="1"
+                android:ellipsize="end"/>
 
         </LinearLayout>
 
@@ -233,11 +268,13 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="9"
-                android:gravity="end"
+                android:gravity="start"
                 android:fontFamily="@font/amaranth"
                 tools:text="Ho Hoan Kiem, Hoan Kiem, Ha Noi"
                 android:textColor="@android:color/black"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:maxLines="1"
+                android:ellipsize="end"/>
 
         </LinearLayout>
 

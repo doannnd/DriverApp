@@ -5,16 +5,21 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -71,7 +76,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class TrackingActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
+public class TrackingActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener {
 
     private static final String TAG = "TrackingActivity";
     public static final long LOCATION_REQUEST_INTERVAL = 5000L;
@@ -81,8 +86,8 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     public static final String DIRECTION_ROUTES_KEY = "routes";
     public static final String DIRECTION_POLYLINE_KEY = "overview_polyline";
     public static final String DIRECTION_POINT_KEY = "points";
-    public static final int DIRECTION_PADDING = 100;
-    private static final float POLYLINE_WIDTH = 5F;
+    public static final int DIRECTION_PADDING = 150;
+    private static final float POLYLINE_WIDTH = 8F;
     private static final double CIRCLE_RADIUS = 50; // 50m
     private static final float CIRCLE_STROKE_WIDTH = 5.0F;
     private static final int CIRCLE_FILL_COLOR = 0x220000FF;
@@ -109,6 +114,9 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     private ProgressBar loadingProgressBar;
     private GoogleMap mTrackingMap;
     private Button startTripButton;
+    private Toolbar trackingToolbar;
+    private EditText userDestinationEditText;
+    private TextView directionTextView;
 
     private double latitudeUser;
     private double longitudeUser;
@@ -125,6 +133,8 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     private List<LatLng> directionPolylineList;
 
     private Location pickupLocation;
+    private double distanceUserAndDriver;
+    private String unitDistance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,11 +149,24 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
 
     private void addEvents() {
         startTripButton.setOnClickListener(this);
+        directionTextView.setOnClickListener(this);
     }
 
     private void initViews() {
+        trackingToolbar = findViewById(R.id.tracking_toolbar);
+        setupToolbar();
+
         loadingProgressBar = findViewById(R.id.loading_progress_bar);
         startTripButton = findViewById(R.id.start_trip_button);
+        userDestinationEditText = findViewById(R.id.user_destination_edit_text);
+        directionTextView = findViewById(R.id.direction_text_view);
+    }
+
+    private void setupToolbar() {
+        setSupportActionBar(trackingToolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
     }
 
     private void setupUI() {
@@ -228,15 +251,19 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
 
             // draw marker on google map
             driverMarker = mTrackingMap.addMarker(new MarkerOptions()
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
+                    .icon(BitmapDescriptorFactory.defaultMarker())
                     .position(new LatLng(driverLatitude, driverLongitude))
                     .title(getString(R.string.title_of_you))
             );
+
+            driverMarker.showInfoWindow();
 
             // move camera
             mTrackingMap.moveCamera(
                     CameraUpdateFactory.newLatLngZoom(new LatLng(driverLatitude, driverLongitude), DRIVER_MAP_ZOOM)
             );
+
+            loadingProgressBar.setVisibility(View.GONE);
 
             if (trackingPolyline != null) {
                 trackingPolyline.remove();
@@ -283,6 +310,23 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
         try {
             JSONObject root = new JSONObject(directionJSON);
             JSONArray routes = root.getJSONArray(DIRECTION_ROUTES_KEY);
+            // display end start on edit text
+            JSONObject routeObject = routes.getJSONObject(0);
+            JSONArray legs = routeObject.getJSONArray(DIRECTION_LEGS_KEY);
+            JSONObject legObject = legs.getJSONObject(0);
+            String destinationAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
+            // display address user on edit text
+            userDestinationEditText.setText(destinationAddress);
+
+            JSONObject distance = legObject.getJSONObject(DIRECTION_DISTANCE_KEY);
+            String km = distance.getString(DIRECTION_TEXT_KEY);
+            Log.d(TAG, "km: " + distance.getString(DIRECTION_TEXT_KEY));
+
+            distanceUserAndDriver = Double.parseDouble(km.replaceAll("[^0-9\\\\.]", ""));
+            String[] units = km.split(" ");
+            unitDistance = units[1];
+            Log.d(TAG, "distance user and driver: " + distanceUserAndDriver);
+            Log.d(TAG, "unit distance: " + unitDistance);
 
             // handle and decode direction json ==> string
             for (int i = 0; i < routes.length(); i++) {
@@ -301,21 +345,22 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
     }
 
     private void showDirectionOnMap(List<LatLng> directionPolylineList) {
-
         // adjusting bound
-        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        for (LatLng latLng : directionPolylineList) {
-            builder.include(latLng);
-        }
+            if (unitDistance.equals("km")) {
+                LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                for (LatLng latLng : directionPolylineList) {
+                    builder.include(latLng);
+                }
 
-        // handle display camera
-        LatLngBounds bounds = builder.build();
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, DIRECTION_PADDING);
-        mTrackingMap.moveCamera(cameraUpdate);
+                // handle display camera
+                LatLngBounds bounds = builder.build();
+                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, DIRECTION_PADDING);
+                mTrackingMap.moveCamera(cameraUpdate);
+            }
 
         // handle information display of direction gray polyline
         PolylineOptions grayPolylineOptions = new PolylineOptions();
-        grayPolylineOptions.color(Color.BLACK);
+        grayPolylineOptions.color(ContextCompat.getColor(this, R.color.colorBackgroundUserCall));
         grayPolylineOptions.width(POLYLINE_WIDTH);
         grayPolylineOptions.startCap(new SquareCap());
         grayPolylineOptions.endCap(new SquareCap());
@@ -331,8 +376,6 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
                 .position(directionPolylineList.get(destinationPosition))
                 .title("user")
         );*/
-
-        loadingProgressBar.setVisibility(View.GONE);
     }
 
     private void buildLocationRequest() {
@@ -368,12 +411,19 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
 
         // show marker of user: destination driver go
         mTrackingMap.addCircle(new CircleOptions()
-                        .center(new LatLng(latitudeUser, longitudeUser))
-                        .radius(CIRCLE_RADIUS)
-                        .strokeColor(Color.BLUE)
-                        .strokeWidth(CIRCLE_STROKE_WIDTH)
-                        .fillColor(CIRCLE_FILL_COLOR)
+                .center(new LatLng(latitudeUser, longitudeUser))
+                .radius(CIRCLE_RADIUS)
+                .strokeColor(Color.BLUE)
+                .strokeWidth(CIRCLE_STROKE_WIDTH)
+                .fillColor(CIRCLE_FILL_COLOR)
         );
+
+      /*  Marker customerMaker = mTrackingMap.addMarker(new MarkerOptions()
+                .position(new LatLng(latitudeUser, longitudeUser))
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin))
+                .title("customer")
+        );
+        customerMaker.showInfoWindow();*/
 
         handleGeoFencing();
     }
@@ -505,6 +555,12 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
             } else if (startTripButton.getText().equals("DROP OFF HERE")) {
                 calculateCashFee(pickupLocation, Common.currentLocation);
             }
+        } else if (v.getId() == R.id.direction_text_view) {
+            String uriDirectionWithGoogleMap = "google.navigation:q=" + latitudeUser + "," + longitudeUser;
+            Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
+            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+            mapIntent.setPackage("com.google.android.apps.maps");
+            startActivity(mapIntent);
         }
     }
 
@@ -556,15 +612,12 @@ public class TrackingActivity extends FragmentActivity implements OnMapReadyCall
                                 intentTripDetail.putExtra(END_ADDRESS_INTENT_KEY, destinationAddress);
                                 intentTripDetail.putExtra(TIME_INTENT_KEY, String.valueOf(timeFormatted));
                                 intentTripDetail.putExtra(DISTANCE_INTENT_KEY, String.valueOf(distanceFormatted));
-                                intentTripDetail.putExtra(TOTAL_INTENT_KEY, String.valueOf(Common.getPrice(distanceFormatted, timeFormatted)));
+                                intentTripDetail.putExtra(TOTAL_INTENT_KEY, Common.getPrice(distanceFormatted, timeFormatted));
                                 intentTripDetail.putExtra(LOCATION_START_INTENT_KEY,
                                         String.format(Locale.getDefault(), "%f,%f",
                                                 pickupLocation.getLatitude(), pickupLocation.getLongitude())
                                 );
-                                intentTripDetail.putExtra(LOCATION_END_INTENT_KEY,
-                                        String.format(Locale.getDefault(), "%f,%f",
-                                                Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude())
-                                );
+                                intentTripDetail.putExtra(LOCATION_END_INTENT_KEY, Common.currentLocation.getLatitude() + "," + Common.currentLocation.getLongitude());
 
                                 intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                 startActivity(intentTripDetail);
