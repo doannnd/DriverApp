@@ -20,6 +20,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -132,9 +133,12 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private IFirebaseMessagingAPI mFirebaseService;
     private List<LatLng> directionPolylineList;
 
+    private String destinationAddress;
+
     private Location pickupLocation;
     private double distanceUserAndDriver;
     private String unitDistance;
+    private LatLng destinationUserTracking = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -158,8 +162,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
         loadingProgressBar = findViewById(R.id.loading_progress_bar);
         startTripButton = findViewById(R.id.start_trip_button);
-        userDestinationEditText = findViewById(R.id.user_destination_edit_text);
         directionTextView = findViewById(R.id.direction_text_view);
+        userDestinationEditText = findViewById(R.id.user_destination_edit_text);
     }
 
     private void setupToolbar() {
@@ -314,9 +318,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             JSONObject routeObject = routes.getJSONObject(0);
             JSONArray legs = routeObject.getJSONArray(DIRECTION_LEGS_KEY);
             JSONObject legObject = legs.getJSONObject(0);
-            String destinationAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
+            destinationAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
             // display address user on edit text
-            userDestinationEditText.setText(destinationAddress);
 
             JSONObject distance = legObject.getJSONObject(DIRECTION_DISTANCE_KEY);
             String km = distance.getString(DIRECTION_TEXT_KEY);
@@ -443,6 +446,14 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 // if driver in radius = 50m --> notification for user ....
                 sendNotificationArrivedToUser(userId);
                 startTripButton.setEnabled(true);
+                if (Common.userDestination != null && Common.destinationLocationUser != null) {
+                    Toast.makeText(TrackingActivity.this, "true", Toast.LENGTH_SHORT).show();
+                    userDestinationEditText.setText(Common.userDestination);
+                    destinationUserTracking = Common.destinationLocationUser;
+                } else {
+                    userDestinationEditText.setText("");
+                    Toast.makeText(TrackingActivity.this, "failed", Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
@@ -556,11 +567,19 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 calculateCashFee(pickupLocation, Common.currentLocation);
             }
         } else if (v.getId() == R.id.direction_text_view) {
-            String uriDirectionWithGoogleMap = "google.navigation:q=" + latitudeUser + "," + longitudeUser;
-            Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
-            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-            mapIntent.setPackage("com.google.android.apps.maps");
-            startActivity(mapIntent);
+            if (startTripButton.isEnabled() && destinationUserTracking != null) {
+                String uriDirectionWithGoogleMap = "google.navigation:q=" + destinationUserTracking.latitude + "," + destinationUserTracking.longitude;
+                Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+                startActivity(mapIntent);
+            } else {
+                String uriDirectionWithGoogleMap = "google.navigation:q=" + latitudeUser + "," + longitudeUser;
+                Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+                startActivity(mapIntent);
+            }
         }
     }
 

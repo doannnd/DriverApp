@@ -97,5 +97,6 @@
     <string name="trip_detail_text">Trip Detail</string>
     <string name="back_icon">back icon</string>
     <string name="star_user_text">STAR USER</string>
+    <string name="sum_pay">Sum:</string>
 
 </resources>

@@ -8,6 +8,8 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.google.gson.Gson;
 import com.nguyendinhdoan.driverapp.activity.UserCallActivity;
+import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.model.Body;
 
 /**
  * receive data from user app : driverId and current location user
@@ -31,7 +33,21 @@ public class MyFirebaseMessaging extends FirebaseMessagingService {
             String jsonBody = remoteMessage.getNotification().getBody();
             String title = remoteMessage.getNotification().getTitle();
             // convert string to LatLng
-            LatLng currentLocationUser = new Gson().fromJson(jsonBody, LatLng.class);
+            LatLng currentLocationUser;
+            Body body;
+            if (jsonBody.contains("destinationLocationUser")) {
+                body = new Gson().fromJson(jsonBody, Body.class);
+                currentLocationUser = body.getCurrentLocationUser();
+                Common.destinationLocationUser = body.getDestinationLocationUser();
+                Common.userDestination = body.getUserDestination();
+                Log.d(TAG, "destination location user" + Common.destinationLocationUser);
+                Log.d(TAG, "user destination: " + Common.userDestination);
+            } else {
+                currentLocationUser = new Gson().fromJson(jsonBody, LatLng.class);
+                Common.destinationLocationUser = null;
+                Common.userDestination = null;
+            }
+
             Log.d(TAG, "onMessageReceive: latitude user: " + currentLocationUser.latitude);
             Log.d(TAG, "onMessageReceived: longitude user: " + currentLocationUser.longitude);
             Log.d(TAG, "onMessageReceived: user id : " + title);

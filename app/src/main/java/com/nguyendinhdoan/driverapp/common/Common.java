@@ -18,6 +18,8 @@ public class Common {
 
     public static Location currentLocation;
     public static Driver currentDriver;
+    public static LatLng destinationLocationUser;
+    public static String userDestination;
 
     private static final String API_KEY = "AIzaSyDXP3aehsojrBx1Nr0RPt85sLPpZLvmeAM";
     private static final String baseURL = "https://maps.googleapis.com";
@@ -37,10 +39,11 @@ public class Common {
     private static final String URL_QUERY_PARAM_DESTINATION_KEY = "destination";
     private static final String URL_QUERY_PARAM_API_KEY = "key";
 
-
     public static final double BASE_FARE = 2.5; // 2.55$
     private static final double COST_PER_MINUTES = 0.35; // 0.35$
     private static final double COST_PER_KM = 1.75; // 1.75$
+
+
 
     // ==> formula = BASE_FARE + (COST_PER_MINUTES * MINUTES) + (COST_PER_KM * KM)
     // with uber - USER_FEE + OTHER_FEE but basic application ==> remove this
