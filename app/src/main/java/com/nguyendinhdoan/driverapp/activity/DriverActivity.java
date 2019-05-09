@@ -873,15 +873,6 @@ public class DriverActivity extends AppCompatActivity
                 }
                 break;
             }
-            case R.id.nav_way_bill: {
-                break;
-            }
-            case R.id.nav_help: {
-                break;
-            }
-            case R.id.nav_settings: {
-                break;
-            }
             case R.id.nav_sign_out: {
                 signOut();
                 break;

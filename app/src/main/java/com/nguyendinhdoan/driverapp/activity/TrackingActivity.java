@@ -3,7 +3,6 @@ package com.nguyendinhdoan.driverapp.activity;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -56,8 +55,11 @@ import com.google.maps.android.PolyUtil;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
+import com.karumi.dexter.listener.single.PermissionListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
 import com.nguyendinhdoan.driverapp.model.Driver;
@@ -121,7 +123,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private Button startTripButton;
     private Toolbar trackingToolbar;
     private EditText userDestinationEditText;
-    private TextView directionTextView;
+    private ImageView directionImageView;
 
     private ImageView userDetailImageView;
     private BottomSheetBehavior userDetailBehavior;
@@ -166,8 +168,9 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
     private void addEvents() {
         startTripButton.setOnClickListener(this);
-        directionTextView.setOnClickListener(this);
+        directionImageView.setOnClickListener(this);
         userDetailImageView.setOnClickListener(this);
+        userPhoneTextView.setOnClickListener(this);
     }
 
     private void initViews() {
@@ -176,7 +179,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
         loadingProgressBar = findViewById(R.id.loading_progress_bar);
         startTripButton = findViewById(R.id.start_trip_button);
-        directionTextView = findViewById(R.id.direction_text_view);
+        directionImageView = findViewById(R.id.direction_image_view);
         userDestinationEditText = findViewById(R.id.user_destination_edit_text);
         userDetailImageView = findViewById(R.id.detail_user_image_view);
 
@@ -478,7 +481,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                     destinationUserTracking = Common.destinationLocationUser;
                 } else {
                     userDestinationEditText.setText("");
-                    Toast.makeText(TrackingActivity.this, "user don't pick up request", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(findViewById(android.R.id.content),"user don't pickup request", Snackbar.LENGTH_LONG).show();
                 }
             }
 
@@ -592,7 +595,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             } else if (startTripButton.getText().equals("DROP OFF HERE")) {
                 calculateCashFee(pickupLocation, Common.currentLocation);
             }
-        } else if (v.getId() == R.id.direction_text_view) {
+        } else if (v.getId() == R.id.direction_image_view) {
             if (startTripButton.isEnabled() && destinationUserTracking != null) {
                 String uriDirectionWithGoogleMap = "google.navigation:q=" + destinationUserTracking.latitude + "," + destinationUserTracking.longitude;
                 Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
@@ -611,7 +614,37 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 showUserDetail(userId);
                 userDetailBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
             }
+        } else if (v.getId() == R.id.user_phone_text_view) {
+            if (phoneNumberUser != null) {
+                callUser(phoneNumberUser);
+            }
         }
+    }
+
+    private void callUser(final String userPhoneNumber) {
+        Dexter.withActivity(this)
+                .withPermission(Manifest.permission.CALL_PHONE)
+                .withListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted(PermissionGrantedResponse response) {
+                        if (ActivityCompat.checkSelfPermission(TrackingActivity.this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                            return;
+                        }
+                        Intent intentCall = new Intent(Intent.ACTION_CALL);
+                        intentCall.setData(Uri.parse("tel:" + userPhoneNumber));
+                        startActivity(intentCall);
+                    }
+
+                    @Override
+                    public void onPermissionDenied(PermissionDeniedResponse response) {
+                        showSnackBar(getString(R.string.permission_denied));
+                    }
+
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+                        token.continuePermissionRequest();
+                    }
+                }).check();
     }
 
     private void showUserDetail(String userId) {

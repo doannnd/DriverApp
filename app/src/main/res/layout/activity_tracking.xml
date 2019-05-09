@@ -22,14 +22,13 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/white">
 
-            <TextView
-                android:id="@+id/direction_text_view"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/amaranth"
-                android:textColor="@android:color/black"
-                android:textSize="20sp"
-                android:text="@string/direction_text"/>
+            <ImageView
+                android:id="@+id/direction_image_view"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:scaleType="fitCenter"
+                android:contentDescription="@string/direction_image"
+                android:src="@drawable/ic_direction"/>
 
             <ImageView
                 android:id="@+id/detail_user_image_view"

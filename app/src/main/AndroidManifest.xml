@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <application
         android:allowBackup="true"
@@ -35,10 +36,12 @@
 
         <activity
             android:name=".activity.TripDetailActivity"
-            android:label="@string/title_activity_trip_detail"></activity>
+            android:label="@string/title_activity_trip_detail"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".activity.TrackingActivity"
-            android:label="@string/title_activity_tracking" />
+            android:label="@string/title_activity_tracking"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".activity.SplashActivity"
             android:screenOrientation="portrait"
