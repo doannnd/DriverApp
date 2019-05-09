@@ -135,6 +135,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private static final double HEADING_NORTH = 0;
     private static final double HEADING_SOUTH = 180;
     private static final int AUTOCOMPLETE_REQUEST_CODE = 9000;
+    public static final String USER_ID_TRACK_KEY = "USER_ID_TRACK_KEY";
 
 
     private ProgressBar loadingProgressBar;
@@ -454,8 +455,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopLocationUpdates();
-        mTrackingMap.clear();
+        /*stopLocationUpdates();
+        mTrackingMap.clear();*/
     }
 
     @Override
@@ -615,6 +616,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 userDestinationEditText.setEnabled(true);
             } else if (startTripButton.getText().equals("DROP OFF HERE")) {
                 calculateCashFee(pickupLocation, Common.currentLocation);
+                // send notification to user
+                sendDropOffNotification(userId);
             }
         } else if (v.getId() == R.id.direction_image_view) {
             if (startTripButton.isEnabled() && Common.destinationLocationUser != null) {
@@ -737,9 +740,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                 Log.d(TAG, "destination address: " + destinationAddress);
                                 Log.d(TAG, "location address: " + locationAddress);
 
-                                // send notification to user
-                                sendDropOffNotification(userId);
-
                                 Intent intentTripDetail = new Intent(TrackingActivity.this, TripDetailActivity.class);
                                 intentTripDetail.putExtra(START_ADDRESS_INTENT_KEY, locationAddress);
                                 intentTripDetail.putExtra(END_ADDRESS_INTENT_KEY, destinationAddress);
@@ -751,6 +751,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                                 pickupLocation.getLatitude(), pickupLocation.getLongitude())
                                 );
                                 intentTripDetail.putExtra(LOCATION_END_INTENT_KEY, Common.currentLocation.getLatitude() + "," + Common.currentLocation.getLongitude());
+                                intentTripDetail.putExtra(USER_ID_TRACK_KEY, userId);
 
                                 intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intentTripDetail);

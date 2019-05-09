@@ -204,17 +204,19 @@ public class DriverActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_home);
 
-        if (getIntent() != null) {
-            String message = getIntent().getStringExtra(TripDetailActivity.TRIP_DETAIL_KEY);
-            if (message != null) {
-                stateDriverSwitch.isChecked();
-            }
-        }
-
         initViews();
         setupUI();
         addEvents();
         //autoCompletePlaces();
+
+        if (getIntent() != null) {
+            String message = getIntent().getStringExtra(TripDetailActivity.TRIP_DETAIL_KEY);
+            if (message != null) {
+                stateDriverSwitch.setChecked(true);
+                FirebaseDatabase.getInstance().goOnline();
+                Toast.makeText(this, "update driver activity", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void autoCompletePlaces() {
@@ -1125,6 +1127,7 @@ public class DriverActivity extends AppCompatActivity
 
     @Override
     protected void onDestroy() {
+        super.onDestroy();
         FirebaseDatabase.getInstance().goOffline();
 
         stopLocationUpdates();
@@ -1141,8 +1144,6 @@ public class DriverActivity extends AppCompatActivity
         if (polyLineAnimator != null) {
             polyLineAnimator.cancel();
         }
-
-        super.onDestroy();
     }
 
     @Override

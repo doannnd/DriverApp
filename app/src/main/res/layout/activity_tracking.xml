@@ -178,7 +178,7 @@
                     android:id="@+id/user_star_text_view"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="end|center_vertical"
+                    android:gravity="end|center"
                     android:fontFamily="@font/amaranth"
                     tools:text="@string/test_star_number"
                     android:textSize="18sp"

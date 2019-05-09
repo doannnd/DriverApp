@@ -1,9 +1,12 @@
 package com.nguyendinhdoan.driverapp.activity;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,18 +20,32 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.model.RateUser;
 import com.stepstone.apprating.AppRatingDialog;
 import com.stepstone.apprating.listener.RatingDialogListener;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class TripDetailActivity extends AppCompatActivity
         implements OnMapReadyCallback, View.OnClickListener, RatingDialogListener {
 
+    private static final String TAG = "TripDetailActivity";
     public static final String TRIP_DETAIL_KEY = "TRIP_DETAIL_KEY";
+    private static final String USER_TABLE = "users";
+    private static final String RATE_USER_TABLE = "rate_user";
     private TextView dateTextView, distanceTextView;
     private TextView timeTextView, baseFareTextView;
     private TextView feeTextView, estimatedPayoutTextView;
@@ -37,15 +54,25 @@ public class TripDetailActivity extends AppCompatActivity
     private ImageView starUserImageView;
 
     private GoogleMap mMap;
-
+    private DatabaseReference rateUserTable;
+    private DatabaseReference userTable;
+    private String userId;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_trip_detail);
+        FirebaseDatabase.getInstance().goOnline();
 
         initGoogleMap();
         initViews();
+        initFirebase();
         addEvents();
+    }
+
+    private void initFirebase() {
+        userTable = FirebaseDatabase.getInstance().getReference(USER_TABLE);
+        rateUserTable = FirebaseDatabase.getInstance().getReference(RATE_USER_TABLE);
     }
 
     private void addEvents() {
@@ -64,6 +91,8 @@ public class TripDetailActivity extends AppCompatActivity
             distanceTextView.setText(String.format(Locale.getDefault(), "%s km", getIntent().getStringExtra(TrackingActivity.DISTANCE_INTENT_KEY)));
             fromTextView.setText(getIntent().getStringExtra(TrackingActivity.START_ADDRESS_INTENT_KEY));
             toTextView.setText(getIntent().getStringExtra(TrackingActivity.END_ADDRESS_INTENT_KEY));
+
+            userId = getIntent().getStringExtra(TrackingActivity.USER_ID_TRACK_KEY);
 
             // add new marker current location fo driver
             String[] endLocation = getIntent().getStringExtra(TrackingActivity.LOCATION_END_INTENT_KEY).split(",");
@@ -174,8 +203,67 @@ public class TripDetailActivity extends AppCompatActivity
     }
 
     @Override
-    public void onPositiveButtonClicked(int i, String s) {
-        Toast.makeText(this, "submit", Toast.LENGTH_SHORT).show();
+    public void onPositiveButtonClicked(int rates, String comments) {
+        RateUser rateUser = new RateUser(String.valueOf(rates), comments);
+
+        rateUserTable.child(userId)
+                .push()
+                .setValue(rateUser)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+
+                            // if success , calculate average of rate and update to Driver information
+                            rateUserTable.child(userId)
+                                    .addValueEventListener(new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                            double sumStar = 0.0;
+                                            int count = 0;
+                                            for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                                                RateUser rateUser1 = postSnapshot.getValue(RateUser.class);
+                                                sumStar += Double.parseDouble(rateUser1.getRates());
+                                                count++;
+                                            }
+                                            double averageStar = sumStar / count;
+                                            DecimalFormat df = new DecimalFormat("#.#");
+                                            String valueUpdate = df.format(averageStar);
+
+
+                                            // create object update
+                                            Map<String, Object> userUpdateRate = new HashMap<>();
+                                            userUpdateRate.put("rates", valueUpdate);
+
+                                            userTable.child(userId).updateChildren(userUpdateRate)
+                                                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                        @Override
+                                                        public void onComplete(@NonNull Task<Void> task) {
+                                                            if (task.isSuccessful()) {
+                                                                showSnackBar("Thank you your submit");
+                                                                starUserImageView.setEnabled(false);
+                                                            } else {
+                                                                showSnackBar("rate updated but can't write to user table");
+                                                            }
+                                                        }
+                                                    });
+                                        }
+
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError databaseError) {
+                                            Log.e(TAG, "onCancelled: error" + databaseError);
+                                        }
+                                    });
+
+                        } else {
+                            Toast.makeText(TripDetailActivity.this, "error occur", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private void showSnackBar(String message) {
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
     }
 
     @Override
