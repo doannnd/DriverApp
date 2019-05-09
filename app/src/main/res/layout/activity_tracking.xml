@@ -48,6 +48,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginBottom="55dp"
         app:layout_behavior="android.support.design.widget.AppBarLayout$ScrollingViewBehavior">
 
         <android.support.constraint.ConstraintLayout
@@ -117,6 +118,99 @@
         </android.support.v7.widget.CardView>
 
     </FrameLayout>
+
+    <android.support.v4.widget.NestedScrollView
+        android:id="@+id/user_detail_bottom_sheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        app:behavior_hideable="false"
+        app:behavior_peekHeight="55dp"
+        app:layout_behavior="android.support.design.widget.BottomSheetBehavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginBottom="16dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="4"
+                    android:fontFamily="@font/amaranth"
+                    android:text="@string/user_details_text"
+                    android:textColor="#444"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="8dp"
+                android:background="@android:color/darker_gray"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/user_name_text_view"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/amaranth"
+                    tools:text="@string/test_name_driver"
+                    android:textSize="18sp"
+                    android:layout_weight="8"/>
+
+                <TextView
+                    android:id="@+id/user_star_text_view"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="end|center_vertical"
+                    android:fontFamily="@font/amaranth"
+                    tools:text="@string/test_star_number"
+                    android:textSize="18sp"
+                    android:layout_weight="2"
+                    android:drawableEnd="@drawable/ic_star"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/user_phone_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/amaranth"
+                android:drawableStart="@drawable/ic_phone"
+                android:drawablePadding="8dp"
+                tools:text="@string/test_phone_driver"
+                android:textSize="18sp"
+                android:textColor="#444"/>
+
+            <Button
+                android:id="@+id/cancel_trip_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel_trip"
+                android:layout_marginTop="16dp"
+                android:background="@color/colorBackgroundUserCall"
+                android:textColor="@android:color/white"/>
+
+        </LinearLayout>
+
+    </android.support.v4.widget.NestedScrollView>
 
 </android.support.design.widget.CoordinatorLayout>
 

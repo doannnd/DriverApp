@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -18,6 +19,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -58,6 +60,7 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.model.Driver;
 import com.nguyendinhdoan.driverapp.model.Notification;
 import com.nguyendinhdoan.driverapp.model.Result;
 import com.nguyendinhdoan.driverapp.model.Sender;
@@ -110,6 +113,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     public static final String TOTAL_INTENT_KEY = "TOTAL_INTENT_KEY";
     public static final String LOCATION_START_INTENT_KEY = "LOCATION_START_INTENT_KEY";
     public static final String LOCATION_END_INTENT_KEY = "LOCATION_END_INTENT_KEY";
+    private static final String USER_TABLE_NAME = "users";
 
 
     private ProgressBar loadingProgressBar;
@@ -118,6 +122,13 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private Toolbar trackingToolbar;
     private EditText userDestinationEditText;
     private TextView directionTextView;
+
+    private ImageView userDetailImageView;
+    private BottomSheetBehavior userDetailBehavior;
+    private TextView userNameTextView;
+    private TextView userStarTextView;
+    private TextView userPhoneTextView;
+    private Button cancelTripButton;
 
     private double latitudeUser;
     private double longitudeUser;
@@ -140,6 +151,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private String unitDistance;
     private LatLng destinationUserTracking = null;
 
+    private String phoneNumberUser;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -154,6 +167,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private void addEvents() {
         startTripButton.setOnClickListener(this);
         directionTextView.setOnClickListener(this);
+        userDetailImageView.setOnClickListener(this);
     }
 
     private void initViews() {
@@ -164,6 +178,16 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         startTripButton = findViewById(R.id.start_trip_button);
         directionTextView = findViewById(R.id.direction_text_view);
         userDestinationEditText = findViewById(R.id.user_destination_edit_text);
+        userDetailImageView = findViewById(R.id.detail_user_image_view);
+
+        View view = findViewById(R.id.user_detail_bottom_sheet);
+        userDetailBehavior = BottomSheetBehavior.from(view);
+
+        userNameTextView = view.findViewById(R.id.user_name_text_view);
+        userStarTextView = view.findViewById(R.id.user_star_text_view);
+        userPhoneTextView = view.findViewById(R.id.user_phone_text_view);
+        cancelTripButton = view.findViewById(R.id.cancel_trip_button);
+
     }
 
     private void setupToolbar() {
@@ -178,6 +202,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             latitudeUser = getIntent().getDoubleExtra(UserCallActivity.LAT_USER, -1);
             longitudeUser = getIntent().getDoubleExtra(UserCallActivity.LNG_USER, -1);
             userId = getIntent().getStringExtra(UserCallActivity.ID_USER);
+
+            showUserDetail(userId);
         }
         // initial fused location provider
         fusedLocationProviderClient = new FusedLocationProviderClient(this);
@@ -416,7 +442,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         mTrackingMap.addCircle(new CircleOptions()
                 .center(new LatLng(latitudeUser, longitudeUser))
                 .radius(CIRCLE_RADIUS)
-                .strokeColor(Color.BLUE)
+                .strokeColor(ContextCompat.getColor(this, R.color.colorBackgroundUserCall))
                 .strokeWidth(CIRCLE_STROKE_WIDTH)
                 .fillColor(CIRCLE_FILL_COLOR)
         );
@@ -452,7 +478,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                     destinationUserTracking = Common.destinationLocationUser;
                 } else {
                     userDestinationEditText.setText("");
-                    Toast.makeText(TrackingActivity.this, "failed", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(TrackingActivity.this, "user don't pick up request", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -580,6 +606,40 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 mapIntent.setPackage("com.google.android.apps.maps");
                 startActivity(mapIntent);
             }
+        } else if (v.getId() == R.id.detail_user_image_view) {
+            if (userId != null) {
+                showUserDetail(userId);
+                userDetailBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        }
+    }
+
+    private void showUserDetail(String userId) {
+        if (userId != null) {
+            DatabaseReference userTable = FirebaseDatabase.getInstance().getReference(USER_TABLE_NAME)
+                    .child(userId);
+            userTable.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    Driver userPickupRequest = dataSnapshot.getValue(Driver.class);
+                    if (userPickupRequest != null) {
+                        userNameTextView.setText(userPickupRequest.getName());
+                        if (userPickupRequest.getRates() == null) {
+                            userStarTextView.setText("No");
+                        } else {
+                            userStarTextView.setText(userPickupRequest.getRates());
+                        }
+                        phoneNumberUser = userPickupRequest.getPhone();
+                        userPhoneTextView.setText(phoneNumberUser);
+                        // show call detail
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
         }
     }
 

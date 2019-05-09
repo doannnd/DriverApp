@@ -95,8 +95,15 @@
     <string name="direction_image_view">direction image view</string>
     <string name="direction_text">DIRECTIONAL</string>
     <string name="trip_detail_text">Trip Detail</string>
+
     <string name="back_icon">back icon</string>
     <string name="star_user_text">STAR USER</string>
     <string name="sum_pay">Sum:</string>
-
+    <string name="call_details_text">Call Details</string>
+    <string name="test_star_number">Star</string>
+    <string name="test_name_driver">John Event</string>
+    <string name="test_phone_driver">+84 0395616595</string>
+    <string name="call_driver">call driver</string>
+    <string name="user_details_text">User Details</string>
+    <string name="cancel_trip">Cancel trip</string>
 </resources>
