@@ -204,6 +204,13 @@ public class DriverActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_home);
 
+        if (getIntent() != null) {
+            String message = getIntent().getStringExtra(TripDetailActivity.TRIP_DETAIL_KEY);
+            if (message != null) {
+                stateDriverSwitch.isChecked();
+            }
+        }
+
         initViews();
         setupUI();
         addEvents();

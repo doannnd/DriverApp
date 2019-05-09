@@ -7,4 +7,14 @@
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorBlack">#000000</color>
     <color name="colorBackgroundUserCall">#263238</color>
+    <color name="blue_light">#3F51B5</color>
+
+    <color name="starColor">@android:color/holo_blue_light</color>
+    <color name="noteDescriptionTextColor">@android:color/holo_blue_dark</color>
+    <color name="titleTextColor">#000000</color>
+    <color name="descriptionTextColor">#A6FFFFFF</color>
+    <color name="commentTextColor">#000000</color>
+    <color name="hintTextColor">#55000000</color>
+    <color name="contentTextColor">@android:color/darker_gray</color>
+    <color name="colorCommentBackground">#FAF8F8</color>
 </resources>

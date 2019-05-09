@@ -1,6 +1,7 @@
 package com.nguyendinhdoan.driverapp.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -8,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -15,6 +17,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,6 +30,7 @@ import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.firebase.geofire.GeoQuery;
 import com.firebase.geofire.GeoQueryEventListener;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -46,12 +50,19 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.SquareCap;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.model.RectangularBounds;
+import com.google.android.libraries.places.api.model.TypeFilter;
+import com.google.android.libraries.places.widget.Autocomplete;
+import com.google.android.libraries.places.widget.AutocompleteActivity;
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.PolyUtil;
+import com.google.maps.android.SphericalUtil;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -75,14 +86,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class TrackingActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener {
+public class TrackingActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener, View.OnTouchListener {
 
     private static final String TAG = "TrackingActivity";
     public static final long LOCATION_REQUEST_INTERVAL = 5000L;
@@ -116,6 +129,12 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     public static final String LOCATION_START_INTENT_KEY = "LOCATION_START_INTENT_KEY";
     public static final String LOCATION_END_INTENT_KEY = "LOCATION_END_INTENT_KEY";
     private static final String USER_TABLE_NAME = "users";
+
+    private static final String NV_CODE = "VN";
+    private static final double DISTANCE_RESTRICT = 100000;
+    private static final double HEADING_NORTH = 0;
+    private static final double HEADING_SOUTH = 180;
+    private static final int AUTOCOMPLETE_REQUEST_CODE = 9000;
 
 
     private ProgressBar loadingProgressBar;
@@ -151,7 +170,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private Location pickupLocation;
     private double distanceUserAndDriver;
     private String unitDistance;
-    private LatLng destinationUserTracking = null;
 
     private String phoneNumberUser;
 
@@ -166,11 +184,13 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         addEvents();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void addEvents() {
         startTripButton.setOnClickListener(this);
         directionImageView.setOnClickListener(this);
         userDetailImageView.setOnClickListener(this);
         userPhoneTextView.setOnClickListener(this);
+        userDestinationEditText.setOnTouchListener(this);
     }
 
     private void initViews() {
@@ -435,6 +455,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     protected void onDestroy() {
         super.onDestroy();
         stopLocationUpdates();
+        mTrackingMap.clear();
     }
 
     @Override
@@ -445,7 +466,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         mTrackingMap.addCircle(new CircleOptions()
                 .center(new LatLng(latitudeUser, longitudeUser))
                 .radius(CIRCLE_RADIUS)
-                .strokeColor(ContextCompat.getColor(this, R.color.colorBackgroundUserCall))
+                .strokeColor(ContextCompat.getColor(this, R.color.blue_light))
                 .strokeWidth(CIRCLE_STROKE_WIDTH)
                 .fillColor(CIRCLE_FILL_COLOR)
         );
@@ -478,7 +499,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 if (Common.userDestination != null && Common.destinationLocationUser != null) {
                     Toast.makeText(TrackingActivity.this, "true", Toast.LENGTH_SHORT).show();
                     userDestinationEditText.setText(Common.userDestination);
-                    destinationUserTracking = Common.destinationLocationUser;
                 } else {
                     userDestinationEditText.setText("");
                     Snackbar.make(findViewById(android.R.id.content),"user don't pickup request", Snackbar.LENGTH_LONG).show();
@@ -592,12 +612,13 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             if (startTripButton.getText().equals("START TRIP")) {
                 pickupLocation = Common.currentLocation;
                 startTripButton.setText(getString(R.string.drop_off_here));
+                userDestinationEditText.setEnabled(true);
             } else if (startTripButton.getText().equals("DROP OFF HERE")) {
                 calculateCashFee(pickupLocation, Common.currentLocation);
             }
         } else if (v.getId() == R.id.direction_image_view) {
-            if (startTripButton.isEnabled() && destinationUserTracking != null) {
-                String uriDirectionWithGoogleMap = "google.navigation:q=" + destinationUserTracking.latitude + "," + destinationUserTracking.longitude;
+            if (startTripButton.isEnabled() && Common.destinationLocationUser != null) {
+                String uriDirectionWithGoogleMap = "google.navigation:q=" + Common.destinationLocationUser.latitude + "," + Common.destinationLocationUser.longitude;
                 Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
                 Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
                 mapIntent.setPackage("com.google.android.apps.maps");
@@ -731,7 +752,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                 );
                                 intentTripDetail.putExtra(LOCATION_END_INTENT_KEY, Common.currentLocation.getLatitude() + "," + Common.currentLocation.getLongitude());
 
-                                intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intentTripDetail);
                                 finish();
 
@@ -748,6 +769,74 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                     });
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN: {
+                if (Common.userDestination == null) {
+                    autoCompletePlaces();
+                } else {
+                    showSnackBar(getString(R.string.user_destination_exist));
+                }
+                break;
+            }
+            case MotionEvent.ACTION_UP: {
+                v.performClick();
+                break;
+            }
+            default:
+                break;
+        }
+        return true;
+    }
+
+    private void autoCompletePlaces() {
+        List<Place.Field> fields = Arrays.asList(Place.Field.ID,
+                Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG);
+        // restrict places only in city
+        LatLng pinLocation = new LatLng(Common.currentLocation.getLatitude(),
+                Common.currentLocation.getLongitude());
+        /*
+         * distance: meter unit: 100000 = 100 km
+         * heading: 0 - north, 180-south
+         * */
+        LatLng northSide = SphericalUtil.computeOffset(pinLocation, DISTANCE_RESTRICT, HEADING_NORTH);
+        LatLng southSide = SphericalUtil.computeOffset(pinLocation, DISTANCE_RESTRICT, HEADING_SOUTH);
+
+        // Start the autocomplete intent.
+        Intent intent = new Autocomplete.IntentBuilder(
+                AutocompleteActivityMode.FULLSCREEN, fields)
+                .setTypeFilter(TypeFilter.ADDRESS)
+                .setCountry(NV_CODE)
+                .setLocationBias(RectangularBounds.newInstance(southSide, northSide))
+                .build(this);
+        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+
+                    Place place = Autocomplete.getPlaceFromIntent(data);
+                    Common.userDestination = place.getName();
+                    Common.destinationLocationUser = place.getLatLng();
+                    Log.d(TAG, "user place address: " + place.getAddress());
+                    Log.d(TAG, "user place name: " + place.getName());
+
+                    userDestinationEditText.setText(Common.userDestination);
+
+            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
+                Status status = Autocomplete.getStatusFromIntent(Objects.requireNonNull(data));
+                Log.d(TAG, status.getStatusMessage());
+            } else if (resultCode == RESULT_CANCELED) {
+                // The user canceled the operation.
+                showSnackBar(getString(R.string.user_cancel_operation));
+            }
         }
     }
 }

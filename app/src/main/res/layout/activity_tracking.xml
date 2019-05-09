@@ -106,6 +106,7 @@
                 android:drawableStart="@drawable/ic_go_location"
                 android:ellipsize="end"
                 android:focusableInTouchMode="false"
+                android:enabled="false"
                 android:hint="@string/hint_destination"
                 android:inputType="text"
                 android:maxLines="1"
