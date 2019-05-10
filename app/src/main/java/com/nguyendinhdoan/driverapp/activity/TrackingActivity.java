@@ -196,6 +196,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         userDetailImageView.setOnClickListener(this);
         userPhoneTextView.setOnClickListener(this);
         userDestinationEditText.setOnTouchListener(this);
+        cancelTripButton.setOnClickListener(this);
     }
 
     private void initViews() {
@@ -648,7 +649,50 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             if (phoneNumberUser != null) {
                 callUser(phoneNumberUser);
             }
+        } else if (v.getId() == R.id.cancel_trip_button) {
+            cancelTripButton();
         }
+    }
+
+    private void cancelTripButton() {
+        DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
+
+        tokenTable.orderByKey().equalTo(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            Token token = postSnapshot.getValue(Token.class);
+
+                            String bodyMessage = "The driver has canceled the trip for some reason, please find another driver";
+                            Notification notification = new Notification("cancelTrip", bodyMessage);
+                            if (token != null) {
+                                Sender sender = new Sender(notification, token.getToken());
+
+                                mFirebaseService.sendMessage(sender)
+                                        .enqueue(new Callback<Result>() {
+                                            @Override
+                                            public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
+                                                if (response.isSuccessful()) {
+                                                    Toast.makeText(TrackingActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
+                                                    finish();
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull Call<Result> call, @NonNull Throwable t) {
+                                                Log.e(TAG, "onFailure: error" + t.getMessage());
+                                            }
+                                        });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
     }
 
     private void callUser(final String userPhoneNumber) {
