@@ -162,7 +162,6 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
@@ -172,17 +171,17 @@
                     android:fontFamily="@font/amaranth"
                     tools:text="@string/test_name_driver"
                     android:textSize="18sp"
-                    android:layout_weight="8"/>
+                    android:layout_weight="7"/>
 
                 <TextView
                     android:id="@+id/user_star_text_view"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="end|center"
+                    android:gravity="end|center_vertical"
                     android:fontFamily="@font/amaranth"
                     tools:text="@string/test_star_number"
                     android:textSize="18sp"
-                    android:layout_weight="2"
+                    android:layout_weight="3"
                     android:drawableEnd="@drawable/ic_star"/>
 
             </LinearLayout>

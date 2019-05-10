@@ -467,6 +467,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     public void onMapReady(GoogleMap googleMap) {
         mTrackingMap = googleMap;
 
+        mTrackingMap.getUiSettings().setZoomControlsEnabled(true);
+
         // show marker of user: destination driver go
         mTrackingMap.addCircle(new CircleOptions()
                 .center(new LatLng(latitudeUser, longitudeUser))

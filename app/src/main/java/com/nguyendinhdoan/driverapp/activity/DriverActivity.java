@@ -211,7 +211,7 @@ public class DriverActivity extends AppCompatActivity
         //autoCompletePlaces();
 
         if (getIntent() != null) {
-            String message = getIntent().getStringExtra(TripDetailActivity.TRIP_DETAIL_KEY);
+            String message = getIntent().getStringExtra("restart");
             if (message != null) {
                 stateDriverSwitch.setChecked(true);
                 FirebaseDatabase.getInstance().goOnline();
@@ -765,9 +765,7 @@ public class DriverActivity extends AppCompatActivity
 
         // show detail animate direction polyline
         //displayDetailDirectionPolyline();
-    }
 
-    private void displayDetailDirectionPolyline() {
         // add marker for direction detail
         carMarker = driverMap.addMarker(
                 new MarkerOptions().position(
@@ -775,6 +773,9 @@ public class DriverActivity extends AppCompatActivity
                         .flat(true)
                         .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
         );
+    }
+
+    private void displayDetailDirectionPolyline() {
         handler = new Handler();
         handler.postDelayed(drawPathRunnable, DRAW_PATH_TIME_OUT);
     }
@@ -873,7 +874,11 @@ public class DriverActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_trip_history: {
-                launchHistoryActivity();
+                if (stateDriverSwitch.isChecked()) {
+                    launchHistoryActivity();
+                } else {
+                    showSnackBar(getString(R.string.please_change_state_you));
+                }
                 break;
             }
             case R.id.nav_edit_profile: {
@@ -1142,7 +1147,6 @@ public class DriverActivity extends AppCompatActivity
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         FirebaseDatabase.getInstance().goOffline();
 
         stopLocationUpdates();
@@ -1159,6 +1163,7 @@ public class DriverActivity extends AppCompatActivity
         if (polyLineAnimator != null) {
             polyLineAnimator.cancel();
         }
+        super.onDestroy();
     }
 
     @Override
@@ -1172,22 +1177,30 @@ public class DriverActivity extends AppCompatActivity
                 break;
             }
             case R.id.stop_direction_button: {
-
                 driverMap.clear();
-
                 if (handler != null) {
-
                     handler.removeCallbacks(drawPathRunnable);
-                    // call display current location
-                    //displayCurrentLocation();
                 }
+                stopDirectionButton.setEnabled(false);
 
+                // draw marker on google map
+                driverMarker = driverMap.addMarker(new MarkerOptions()
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car))
+                        .position(new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude()))
+                        .title(getString(R.string.title_of_you))
+                );
+                // show title marker
+                driverMarker.showInfoWindow();
+
+                // move camera
+                driverMap.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude()), DRIVER_MAP_ZOOM)
+                );
+
+                destinationEditText.setText("");
                 destination = null;
-
-                // if marker exist --> delete
-                if (driverMarker != null) {
-                    driverMarker.remove();
-                }
+                directionPolylineList = null;
+                destinationLocation = null;
 
                 break;
             }

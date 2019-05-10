@@ -110,4 +110,5 @@
     <string name="user_destination_exist">destination of user already exist</string>
     <string name="star_image_view">star image view</string>
     <string name="my_routes">My Routes</string>
+    <string name="back_image_view">back image view</string>
 </resources>

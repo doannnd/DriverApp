@@ -186,7 +186,7 @@ public class TripDetailActivity extends AppCompatActivity
 
     private void launchDriverActivity() {
         Intent intent = DriverActivity.start(this);
-        intent.putExtra(TRIP_DETAIL_KEY, "restart");
+        intent.putExtra("restart", "trip detail");
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
