@@ -91,8 +91,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 import retrofit2.Call;
@@ -625,6 +627,9 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 calculateCashFee(pickupLocation, Common.currentLocation);
                 // send notification to user
                 sendDropOffNotification(userId);
+
+                // update state of driver
+                updateStateDrivers();
             }
         } else if (v.getId() == R.id.direction_image_view) {
             if (startTripButton.isEnabled() && Common.destinationLocationUser != null) {
@@ -654,6 +659,25 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         }
     }
 
+    private void updateStateDrivers() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("state", "not_working");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(TrackingActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(TrackingActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
     private void cancelTripButton() {
         DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
 
@@ -674,6 +698,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
+                                                    updateStateDrivers();
                                                     Toast.makeText(TrackingActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
                                                     finish();
                                                 }

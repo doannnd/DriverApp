@@ -218,6 +218,27 @@ public class DriverActivity extends AppCompatActivity
                 Toast.makeText(this, "update driver activity", Toast.LENGTH_LONG).show();
             }
         }
+
+        updateStateDrivers();
+    }
+
+    private void updateStateDrivers() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("state", "not_working");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(DriverActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(DriverActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     private void autoCompletePlaces() {

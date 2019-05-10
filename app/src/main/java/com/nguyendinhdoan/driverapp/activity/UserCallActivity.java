@@ -14,6 +14,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -33,6 +36,9 @@ import com.nguyendinhdoan.driverapp.services.MyFirebaseMessaging;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -85,6 +91,27 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         addEvent();
 
         setupCountDownTimer();
+        updateStateDrivers();
+    }
+
+    private void updateStateDrivers() {
+        // create object update
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("state", "working");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     private void setupCountDownTimer() {
@@ -303,6 +330,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
+                                                    updateStateDriver();
                                                     Toast.makeText(UserCallActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
                                                     finish();
                                                 }
@@ -320,6 +348,26 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                     @Override
                     public void onCancelled(@NonNull DatabaseError databaseError) {
                         Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
+    }
+
+    private void updateStateDriver() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("state", "not_working");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d("update", "update state driver success");
+                        } else {
+                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
     }
