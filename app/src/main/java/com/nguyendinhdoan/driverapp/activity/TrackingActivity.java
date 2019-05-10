@@ -50,12 +50,15 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.SquareCap;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.model.RectangularBounds;
 import com.google.android.libraries.places.api.model.TypeFilter;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -74,6 +77,7 @@ import com.karumi.dexter.listener.single.PermissionListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
 import com.nguyendinhdoan.driverapp.model.Driver;
+import com.nguyendinhdoan.driverapp.model.History;
 import com.nguyendinhdoan.driverapp.model.Notification;
 import com.nguyendinhdoan.driverapp.model.Result;
 import com.nguyendinhdoan.driverapp.model.Sender;
@@ -739,6 +743,40 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                 String locationAddress = legObject.getString(START_ADDRESS_KEY);
                                 Log.d(TAG, "destination address: " + destinationAddress);
                                 Log.d(TAG, "location address: " + locationAddress);
+
+                                // save history driver
+                                DatabaseReference historyDriverTable = FirebaseDatabase.getInstance().getReference("history_driver");
+                                History historyDriver = new History(Common.currentDate(), locationAddress, destinationAddress, km, minutes);
+                                historyDriverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                        .push()
+                                        .setValue(historyDriver)
+                                        .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                            @Override
+                                            public void onComplete(@NonNull Task<Void> task) {
+                                                if (task.isSuccessful()) {
+                                                    Log.d(TAG, "save history driver success");
+                                                } else {
+                                                    Log.d(TAG, "save history driver failed");
+                                                }
+                                            }
+                                        });
+
+                                // save history user
+                                DatabaseReference historyUserTable = FirebaseDatabase.getInstance().getReference("history_user");
+                                History history = new History(Common.currentDate(), locationAddress, destinationAddress, km, minutes);
+                                historyUserTable.child(userId)
+                                        .push()
+                                        .setValue(history)
+                                        .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                            @Override
+                                            public void onComplete(@NonNull Task<Void> task) {
+                                                if (task.isSuccessful()) {
+                                                    Log.d(TAG, "save history user success");
+                                                } else {
+                                                    Log.d(TAG, "save history user failed");
+                                                }
+                                            }
+                                        });
 
                                 Intent intentTripDetail = new Intent(TrackingActivity.this, TripDetailActivity.class);
                                 intentTripDetail.putExtra(START_ADDRESS_INTENT_KEY, locationAddress);

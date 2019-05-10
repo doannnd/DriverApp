@@ -19,6 +19,7 @@ public class Common {
     public static Location currentLocation;
     public static Driver currentDriver;
     public static LatLng destinationLocationUser;
+
     public static String userDestination;
 
     private static final String API_KEY = "AIzaSyDXP3aehsojrBx1Nr0RPt85sLPpZLvmeAM";

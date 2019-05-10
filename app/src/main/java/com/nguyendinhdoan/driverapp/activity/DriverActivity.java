@@ -153,6 +153,7 @@ public class DriverActivity extends AppCompatActivity
     private static final String EMAIL_KEY = "email";
     private static final String PHONE_KEY = "phone";
     private static final String AVATAR_URL_KEY = "avatarUrl";
+    public static final String DRIVER_ID_KEY = "DRIVER_ID_KEY";
 
     private SwitchCompat stateDriverSwitch;
     private EditText destinationEditText;
@@ -872,6 +873,7 @@ public class DriverActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_trip_history: {
+                launchHistoryActivity();
                 break;
             }
             case R.id.nav_edit_profile: {
@@ -890,6 +892,19 @@ public class DriverActivity extends AppCompatActivity
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void launchHistoryActivity() {
+        FirebaseUser driver = FirebaseAuth.getInstance().getCurrentUser();
+        if (driver != null) {
+            String driverId = driver.getUid();
+            Intent intentHistory = HistoryActivity.start(this);
+            intentHistory.putExtra(DRIVER_ID_KEY, driverId);
+
+            intentHistory.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intentHistory);
+            finish();
+        }
     }
 
     private void showDialogUpdateProfile() {
