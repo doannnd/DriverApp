@@ -90,6 +90,8 @@ public class HistoryActivity extends AppCompatActivity {
         setSupportActionBar(myRoutesToolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeButtonEnabled(true);
         }
     }
 }

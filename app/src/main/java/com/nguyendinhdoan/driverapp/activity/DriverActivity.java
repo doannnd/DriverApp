@@ -903,7 +903,7 @@ public class DriverActivity extends AppCompatActivity
 
             intentHistory.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intentHistory);
-            finish();
+            //finish();
         }
     }
 
