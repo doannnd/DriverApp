@@ -37,6 +37,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -440,6 +441,13 @@ public class DriverActivity extends AppCompatActivity
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+
+        // add my button location in bottom right
+        View locationButton = ((View) mapFragment.getView().findViewById(Integer.parseInt("1")).getParent()).findViewById(Integer.parseInt("2"));
+        RelativeLayout.LayoutParams rlp = (RelativeLayout.LayoutParams) locationButton.getLayoutParams();
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0);
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+        rlp.setMargins(0, 0, 30, 30);
     }
 
     private void startLocationUpdates() {
@@ -529,6 +537,10 @@ public class DriverActivity extends AppCompatActivity
                 .position(new LatLng(driverLatitude, driverLongitude))
                 .title(getString(R.string.title_of_you))
         );
+        // ad marker
+        driverMap.setMyLocationEnabled(true);
+        driverMap.getUiSettings().setMyLocationButtonEnabled(true);
+
         // show title marker
         driverMarker.showInfoWindow();
 
@@ -1198,7 +1210,17 @@ public class DriverActivity extends AppCompatActivity
                 break;
             }
             case R.id.stop_direction_button: {
+
+                driverMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                        new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude()), DRIVER_MAP_ZOOM
+                ));
+
+                if (driverMarker != null) {
+                    driverMarker.remove(); // if marker existed --> delete
+                }
+
                 driverMap.clear();
+
                 if (handler != null) {
                     handler.removeCallbacks(drawPathRunnable);
                 }
@@ -1212,11 +1234,6 @@ public class DriverActivity extends AppCompatActivity
                 );
                 // show title marker
                 driverMarker.showInfoWindow();
-
-                // move camera
-                driverMap.animateCamera(
-                        CameraUpdateFactory.newLatLngZoom(new LatLng(Common.currentLocation.getLatitude(), Common.currentLocation.getLongitude()), DRIVER_MAP_ZOOM)
-                );
 
                 destinationEditText.setText("");
                 destination = null;

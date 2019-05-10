@@ -86,9 +86,9 @@
         android:id="@+id/start_direction_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="100dp"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="80dp"
         map:backgroundTint="@android:color/white"
         map:srcCompat="@drawable/ic_direction"
         map:fabSize="mini"/>
