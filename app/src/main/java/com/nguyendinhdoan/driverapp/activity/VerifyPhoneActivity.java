@@ -262,7 +262,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                         public void onComplete(@NonNull Task<Void> task) {
                             if (task.isSuccessful()) { // if save driver in database success
                                 // jump into driver screen
-                                launchDriverScreen();
+                                launchCarChargeScreen();
                             } else {
                                 Log.e(TAG, "error save driver in database: " + task.getException());
                             }
@@ -272,8 +272,8 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
 
     }
 
-    private void launchDriverScreen() {
-        Intent intentDriver = DriverActivity.start(this);
+    private void launchCarChargeScreen() {
+        Intent intentDriver = CarChargeActivity.start(this);
         intentDriver.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intentDriver);
         finish();

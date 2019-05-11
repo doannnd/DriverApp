@@ -111,4 +111,13 @@
     <string name="star_image_view">star image view</string>
     <string name="my_routes">My Routes</string>
     <string name="back_image_view">back image view</string>
+    <string name="license_plates_hint">License plates</string>
+    <string name="vehicle_name_hint">vehicle name</string>
+    <string name="car_information_text">Car information</string>
+    <string name="car_rates_text">Car rates</string>
+    <string name="_0_2_km">0 - 2 km</string>
+    <string name="_3_10_km">3 - 10 km</string>
+    <string name="_11_20_km">11 - 20 km</string>
+    <string name="_20_km"><![CDATA[> 20 km]]></string>
+    <string name="confirm_text">Confirm</string>
 </resources>
