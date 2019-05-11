@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -179,6 +180,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private String unitDistance;
 
     private String phoneNumberUser;
+    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -688,8 +690,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                             Token token = postSnapshot.getValue(Token.class);
 
-                            String bodyMessage = "The driver has canceled the trip for some reason, please find another driver";
-                            Notification notification = new Notification("cancelTrip", bodyMessage);
+                            Notification notification = new Notification("cancelTrip", "The driver has canceled the trip for some reason, please find another driver");
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 
@@ -698,6 +699,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
+                                                    updateCancelDrivers();
                                                     updateStateDrivers();
                                                     Toast.makeText(TrackingActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
                                                     finish();
@@ -716,6 +718,55 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                     @Override
                     public void onCancelled(@NonNull DatabaseError databaseError) {
                         Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
+    }
+
+    private void updateCancelDrivers() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("cancel", "1");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d("update", "update state driver success");
+                        } else {
+                            Toast.makeText(TrackingActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+
+        handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //finish is here
+                ResetCancelDriver();
+            }
+        }, 60000);
+    }
+
+    private void ResetCancelDriver() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("cancel", "0");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d("update", "update state driver success");
+                        } else {
+                            Toast.makeText(TrackingActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
     }

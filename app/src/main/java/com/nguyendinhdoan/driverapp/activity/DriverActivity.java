@@ -221,6 +221,27 @@ public class DriverActivity extends AppCompatActivity
         }
 
         updateStateDrivers();
+        updateCancelDrivers();
+    }
+
+    private void updateCancelDrivers() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("cancel", "0");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d("update", "update cancel driver success");
+                        } else {
+                            Toast.makeText(DriverActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     private void updateStateDrivers() {

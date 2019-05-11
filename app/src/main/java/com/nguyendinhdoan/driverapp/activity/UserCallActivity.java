@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -79,7 +80,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     private double longitudeUser;
 
     private CountDownTimer countDownTimer;
-
+    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -330,6 +331,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
+                                                    updateCancelDriver();
                                                     updateStateDriver();
                                                     Toast.makeText(UserCallActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
                                                     finish();
@@ -348,6 +350,55 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                     @Override
                     public void onCancelled(@NonNull DatabaseError databaseError) {
                         Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
+    }
+
+    private void updateCancelDriver() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("cancel", "1");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d("update", "update cancel driver success");
+                        } else {
+                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+
+        handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //finish is here
+                ResetCancelDriver();
+            }
+        }, 60000);
+    }
+
+    private void ResetCancelDriver() {
+        Map<String, Object> driverUpdateState = new HashMap<>();
+        driverUpdateState.put("cancel", "0");
+
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .updateChildren(driverUpdateState)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d("update", "update cancel driver success");
+                        } else {
+                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
     }
