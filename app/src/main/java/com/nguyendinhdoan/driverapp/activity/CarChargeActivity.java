@@ -2,30 +2,28 @@ package com.nguyendinhdoan.driverapp.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.model.Driver;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 
 
 public class CarChargeActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String TAG = "CarChargeActivity";
     private static final String DRIVER_TABLE_NAME = "drivers";
 
     private Toolbar toolbar;
@@ -38,6 +36,8 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
     private Button confirmButton;
 
     private DatabaseReference driverTable;
+    private Driver driver;
+    private String driverId;
 
     public static Intent start(Context context) {
         return new Intent(context, CarChargeActivity.class);
@@ -55,6 +55,9 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
     }
 
     private void initDatabase() {
+        if (getIntent() != null) {
+            driver = getIntent().getParcelableExtra(VerifyPhoneActivity.DRIVER_KEY);
+        }
         driverTable = FirebaseDatabase.getInstance().getReference(DRIVER_TABLE_NAME);
     }
 
@@ -64,6 +67,9 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
 
     private void setupToolbar() {
         setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
     }
 
     private void initViews() {
@@ -85,38 +91,45 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
     }
 
     private void updateInforDriver() {
-       String licensePlates = licensePlatesEditText.getText().toString();
-       String vehicleName = vehicleNameEditText.getText().toString();
-       String zeroToTwo = zeroToTwoEditText.getText().toString();
-       String threeToTen = threeToTenEditText.getText().toString();
-       String elevenToTwenty = elevenToTwentyEditText.getText().toString();
-       String biggerTwenty = biggerTwentyEditText.getText().toString();
+       String licensePlates = Objects.requireNonNull(licensePlatesEditText.getText()).toString();
+       String vehicleName = Objects.requireNonNull(vehicleNameEditText.getText()).toString();
+       String zeroToTwo = Objects.requireNonNull(zeroToTwoEditText.getText()).toString();
+       String threeToTen = Objects.requireNonNull(threeToTenEditText.getText()).toString();
+       String elevenToTwenty = Objects.requireNonNull(elevenToTwentyEditText.getText()).toString();
+       String biggerTwenty = Objects.requireNonNull(biggerTwentyEditText.getText()).toString();
 
         if (licensePlates.isEmpty() || vehicleName.isEmpty() ||
                 zeroToTwo.isEmpty() || threeToTen.isEmpty() ||
                 elevenToTwenty.isEmpty() || biggerTwenty.isEmpty()) {
+            Snackbar.make(findViewById(android.R.id.content),
+                    (R.string.field_empty_text), Snackbar.LENGTH_LONG ).show();
+        } else {
 
-            Map<String, Object> driverUpdate = new HashMap<>();
-            driverUpdate.put("licensePlates", licensePlates);
-            driverUpdate.put("vehicleName", vehicleName);
-            driverUpdate.put("zeroToTwo", zeroToTwo);
-            driverUpdate.put("threeToTen", threeToTen);
-            driverUpdate.put("elevenToTwenty", elevenToTwenty);
-            driverUpdate.put("biggerTwenty", biggerTwenty);
+            Driver driverFull = new Driver(
+                    driver.getName(),
+                    driver.getEmail(),
+                    driver.getPhone(),
+                    licensePlates,
+                    vehicleName,
+                    zeroToTwo,
+                    threeToTen,
+                    elevenToTwenty,
+                    biggerTwenty
+            );
 
-            driverTable.updateChildren(driverUpdate).addOnCompleteListener(new OnCompleteListener<Void>() {
+            driverId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
+            driverTable.child(driverId).setValue(driverFull).addOnCompleteListener(new OnCompleteListener<Void>() {
                 @Override
                 public void onComplete(@NonNull Task<Void> task) {
                     if (task.isSuccessful()) {
                         launchDriverActivity();
                     } else {
-                        Snackbar.make(findViewById(android.R.id.content), task.getException().getMessage(), Snackbar.LENGTH_LONG).show();
+                        Snackbar.make(findViewById(android.R.id.content),
+                                Objects.requireNonNull(task.getException()).getMessage(),
+                                Snackbar.LENGTH_LONG).show();
                     }
                 }
             });
-
-        } else {
-            Snackbar.make(findViewById(android.R.id.content),"field emtpy", Snackbar.LENGTH_LONG ).show();
         }
     }
 
@@ -126,4 +139,5 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
         startActivity(intent);
         finish();
     }
+
 }

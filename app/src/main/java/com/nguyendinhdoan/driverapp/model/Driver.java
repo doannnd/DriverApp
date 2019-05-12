@@ -10,7 +10,6 @@ public class Driver implements Parcelable {
     private String phone;
     private String avatarUrl;
     private String rates;
-    private String cancel;
     private String licensePlates;
     private String vehicleName;
     private String zeroToTwo;
@@ -22,6 +21,19 @@ public class Driver implements Parcelable {
         this.name = name;
         this.email = email;
         this.phone = phone;
+    }
+
+    public Driver(String name, String email, String phone, String licensePlates,
+                  String vehicleName, String zeroToTwo, String threeToTen, String elevenToTwenty, String biggerTwenty) {
+        this.name = name;
+        this.email = email;
+        this.phone = phone;
+        this.licensePlates = licensePlates;
+        this.vehicleName = vehicleName;
+        this.zeroToTwo = zeroToTwo;
+        this.threeToTen = threeToTen;
+        this.elevenToTwenty = elevenToTwenty;
+        this.biggerTwenty = biggerTwenty;
     }
 
     public String getLicensePlates() {
@@ -78,14 +90,6 @@ public class Driver implements Parcelable {
 
     public String getRates() {
         return rates;
-    }
-
-    public String getCancel() {
-        return cancel;
-    }
-
-    public void setCancel(String cancel) {
-        this.cancel = cancel;
     }
 
     public void setRates(String rates) {

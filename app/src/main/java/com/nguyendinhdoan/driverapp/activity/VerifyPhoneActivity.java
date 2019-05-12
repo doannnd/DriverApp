@@ -26,13 +26,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthProvider;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
-import com.nguyendinhdoan.driverapp.common.Common;
 import com.nguyendinhdoan.driverapp.model.Driver;
 import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
@@ -43,11 +40,10 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
         View.OnClickListener, TextView.OnEditorActionListener {
 
     public static final String TAG = "PHONE_ACTIVITY";
-    public static final String DRIVER_TABLE_NAME = "drivers";
-
     public static final long INITIAL_COUNT_DOWN = 60000L; // 60s
     public static final long COUNT_DOWN_INTERVAL = 1000L; // 1s
     public static final long VERIFICATION_CODE_TIME_OUT = 60L; // 60s
+    public static final String DRIVER_KEY = "DRIVER_KEY";
 
 
     private ConstraintLayout rootLayout;
@@ -58,8 +54,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
     private Button verificationCodeButton;
     private ProgressBar progressBar;
 
-    private FirebaseAuth driverAuth;
-    private DatabaseReference driverTable;
+
     private CountDownTimer countDownTimer;
     private String verificationId;
     private Driver driver;
@@ -73,6 +68,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_verify_phone);
 
+        FirebaseDatabase.getInstance().goOnline();
         initViews();
         setupUI();
         addEvents();
@@ -93,12 +89,6 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
         setupTimeOut();
         displayPhoneNumber();
         sendVerificationCode();
-        initFirebase();
-    }
-
-    private void initFirebase() {
-        driverTable = FirebaseDatabase.getInstance().getReference(DRIVER_TABLE_NAME);
-        driverAuth = FirebaseAuth.getInstance();
     }
 
     private void setupToolbar() {
@@ -237,11 +227,7 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         progressBar.setVisibility(View.INVISIBLE);
                         if (task.isSuccessful()) {
-                            // save previous, after jump to driver screen
-                            //Common.currentDriver = driver;
-                            saveDriverInDatabase(driver);
-                            // save current driver to send notification have driver name to user app
-
+                            launchCarChargeScreen(driver);
                         } else {
                             Log.e(TAG, "error: " + task.getException());
                             showSnackBar(Objects.requireNonNull(task.getException()).getMessage());
@@ -250,30 +236,9 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
                 });
     }
 
-    private void saveDriverInDatabase(Driver driver) {
-        FirebaseUser user = driverAuth.getCurrentUser();
-        // check user exist
-        if (user != null) {
-            String driverId = user.getUid();
-            driverTable.child(driverId)
-                    .setValue(driver)
-                    .addOnCompleteListener(new OnCompleteListener<Void>() {
-                        @Override
-                        public void onComplete(@NonNull Task<Void> task) {
-                            if (task.isSuccessful()) { // if save driver in database success
-                                // jump into driver screen
-                                launchCarChargeScreen();
-                            } else {
-                                Log.e(TAG, "error save driver in database: " + task.getException());
-                            }
-                        }
-                    });
-        }
-
-    }
-
-    private void launchCarChargeScreen() {
+    private void launchCarChargeScreen(Driver driver) {
         Intent intentDriver = CarChargeActivity.start(this);
+        intentDriver.putExtra(DRIVER_KEY, driver);
         intentDriver.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intentDriver);
         finish();

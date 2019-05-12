@@ -7,8 +7,8 @@
     <string name="hint_phone">phone</string>
     <string name="login_button_text">Login</string>
     <string name="code_vn">+84</string>
-    <string name="test_name">doannd</string>
-    <string name="test_email">nguyendinhdoanjdk@gmail.com</string>
+    <string name="test_name">dangnd</string>
+    <string name="test_email">nguyendinhdang@gmail.com</string>
     <string name="test_phone">0962539727</string>
     <string name="empty_name">name is required</string>
 
@@ -114,10 +114,17 @@
     <string name="license_plates_hint">License plates</string>
     <string name="vehicle_name_hint">vehicle name</string>
     <string name="car_information_text">Car information</string>
-    <string name="car_rates_text">Car rates</string>
-    <string name="_0_2_km">0 - 2 km</string>
-    <string name="_3_10_km">3 - 10 km</string>
-    <string name="_11_20_km">11 - 20 km</string>
-    <string name="_20_km"><![CDATA[> 20 km]]></string>
+    <string name="car_rates_text">Car rates (VND)</string>
+    <string name="_0_2_km">0 – 2 km (VND)</string>
+    <string name="_3_10_km">3 – 10 km (VND)</string>
+    <string name="_11_20_km">11 – 20 km (VND)</string>
+    <string name="_20_km"><![CDATA[> 20 km]]> (VND)</string>
     <string name="confirm_text">Confirm</string>
+    <string name="field_empty_text">field empty</string>
+    <string name="_15a222_22">15A222.22</string>
+    <string name="kia_morning">Kia Morning</string>
+    <string name="_17000">17000</string>
+    <string name="_13000">13000</string>
+    <string name="_14000">14000</string>
+    <string name="_12000">12000</string>
 </resources>

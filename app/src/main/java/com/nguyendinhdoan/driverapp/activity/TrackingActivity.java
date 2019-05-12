@@ -699,7 +699,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
-                                                    updateCancelDrivers();
+                                                    //updateCancelDrivers();
                                                     updateStateDrivers();
                                                     Toast.makeText(TrackingActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
                                                     finish();

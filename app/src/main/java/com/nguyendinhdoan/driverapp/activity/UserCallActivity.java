@@ -331,7 +331,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
-                                                    updateCancelDriver();
+                                                    //updateCancelDriver();
                                                     updateStateDriver();
                                                     Toast.makeText(UserCallActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
                                                     finish();
