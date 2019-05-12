@@ -17,4 +17,6 @@
     <color name="hintTextColor">#55000000</color>
     <color name="contentTextColor">@android:color/darker_gray</color>
     <color name="colorCommentBackground">#FAF8F8</color>
+
+    <color name="light_blue_gray">#eaeff2</color>
 </resources>

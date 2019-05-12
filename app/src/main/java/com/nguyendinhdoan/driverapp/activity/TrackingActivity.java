@@ -102,7 +102,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class TrackingActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener, View.OnTouchListener {
+public class TrackingActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener{
 
     private static final String TAG = "TrackingActivity";
     public static final long LOCATION_REQUEST_INTERVAL = 5000L;
@@ -149,13 +149,12 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private GoogleMap mTrackingMap;
     private Button startTripButton;
     private Toolbar trackingToolbar;
-    private EditText userDestinationEditText;
+    private TextView userDestinationEditText;
     private ImageView directionImageView;
 
     private ImageView userDetailImageView;
     private BottomSheetBehavior userDetailBehavior;
     private TextView userNameTextView;
-    private TextView userStarTextView;
     private TextView userPhoneTextView;
     private Button cancelTripButton;
 
@@ -180,7 +179,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private String unitDistance;
 
     private String phoneNumberUser;
-    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -199,7 +197,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         directionImageView.setOnClickListener(this);
         userDetailImageView.setOnClickListener(this);
         userPhoneTextView.setOnClickListener(this);
-        userDestinationEditText.setOnTouchListener(this);
         cancelTripButton.setOnClickListener(this);
     }
 
@@ -210,14 +207,13 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         loadingProgressBar = findViewById(R.id.loading_progress_bar);
         startTripButton = findViewById(R.id.start_trip_button);
         directionImageView = findViewById(R.id.direction_image_view);
-        userDestinationEditText = findViewById(R.id.user_destination_edit_text);
+        userDestinationEditText = findViewById(R.id.user_destination_text_view);
         userDetailImageView = findViewById(R.id.detail_user_image_view);
 
         View view = findViewById(R.id.user_detail_bottom_sheet);
         userDetailBehavior = BottomSheetBehavior.from(view);
 
         userNameTextView = view.findViewById(R.id.user_name_text_view);
-        userStarTextView = view.findViewById(R.id.user_star_text_view);
         userPhoneTextView = view.findViewById(R.id.user_phone_text_view);
         cancelTripButton = view.findViewById(R.id.cancel_trip_button);
 
@@ -666,7 +662,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         driverUpdateState.put("state", "not_working");
 
         DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
-        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+        driverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                 .updateChildren(driverUpdateState)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
@@ -722,34 +718,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 });
     }
 
-    private void updateCancelDrivers() {
-        Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("cancel", "1");
-
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
-        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                .updateChildren(driverUpdateState)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        if (task.isSuccessful()) {
-                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
-                            Log.d("update", "update state driver success");
-                        } else {
-                            Toast.makeText(TrackingActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-
-        handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                //finish is here
-                ResetCancelDriver();
-            }
-        }, 60000);
-    }
 
     private void ResetCancelDriver() {
         Map<String, Object> driverUpdateState = new HashMap<>();
@@ -807,11 +775,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                     Driver userPickupRequest = dataSnapshot.getValue(Driver.class);
                     if (userPickupRequest != null) {
                         userNameTextView.setText(userPickupRequest.getName());
-                        if (userPickupRequest.getRates() == null) {
-                            userStarTextView.setText("No");
-                        } else {
-                            userStarTextView.setText(userPickupRequest.getRates());
-                        }
                         phoneNumberUser = userPickupRequest.getPhone();
                         userPhoneTextView.setText(phoneNumberUser);
                         // show call detail
@@ -931,27 +894,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN: {
-                if (Common.userDestination == null) {
-                    autoCompletePlaces();
-                } else {
-                    showSnackBar(getString(R.string.user_destination_exist));
-                }
-                break;
-            }
-            case MotionEvent.ACTION_UP: {
-                v.performClick();
-                break;
-            }
-            default:
-                break;
-        }
-        return true;
     }
 
     private void autoCompletePlaces() {
