@@ -12,8 +12,6 @@ public class SplashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         //FirebaseAuth.getInstance().signOut();
-
-
         Intent intentLogin = LoginActivity.start(this);
         intentLogin.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intentLogin);

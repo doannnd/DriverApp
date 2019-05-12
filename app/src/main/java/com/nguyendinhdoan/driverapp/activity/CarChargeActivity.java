@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -105,7 +106,9 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
                     (R.string.field_empty_text), Snackbar.LENGTH_LONG ).show();
         } else {
 
+            driverId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
             Driver driverFull = new Driver(
+                    driverId,
                     driver.getName(),
                     driver.getEmail(),
                     driver.getPhone(),
@@ -117,7 +120,6 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
                     biggerTwenty
             );
 
-            driverId = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid();
             driverTable.child(driverId).setValue(driverFull).addOnCompleteListener(new OnCompleteListener<Void>() {
                 @Override
                 public void onComplete(@NonNull Task<Void> task) {
