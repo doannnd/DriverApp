@@ -7,14 +7,12 @@ import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,6 +42,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -67,7 +66,6 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     public static final long COUNT_DOWN_INTERVAL = 1000;
     public static final long INITIAL_COUNT_DOWN = 30000;
 
-    private ImageView mapImageView;
     private TextView timeTextView;
     private TextView distanceTextView;
     private TextView addressTextView;
@@ -84,7 +82,6 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     private double longitudeUser;
 
     private CountDownTimer countDownTimer;
-    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,7 +108,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         driverUpdateState.put("state", "working");
 
         DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
-        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+        driverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                 .updateChildren(driverUpdateState)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
@@ -230,7 +227,6 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void initViews() {
-        mapImageView = findViewById(R.id.map_image_view);
         timeTextView = findViewById(R.id.time_text_view);
         distanceTextView = findViewById(R.id.distance_text_view);
         addressTextView = findViewById(R.id.address_text_view);
@@ -364,61 +360,12 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                 });
     }
 
-    private void updateCancelDriver() {
-        Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("cancel", "1");
-
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
-        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                .updateChildren(driverUpdateState)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        if (task.isSuccessful()) {
-                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
-                            Log.d("update", "update cancel driver success");
-                        } else {
-                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-
-        handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                //finish is here
-                ResetCancelDriver();
-            }
-        }, 60000);
-    }
-
-    private void ResetCancelDriver() {
-        Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("cancel", "0");
-
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
-        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                .updateChildren(driverUpdateState)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        if (task.isSuccessful()) {
-                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
-                            Log.d("update", "update cancel driver success");
-                        } else {
-                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-    }
-
     private void updateStateDriver() {
         Map<String, Object> driverUpdateState = new HashMap<>();
         driverUpdateState.put("state", "not_working");
 
         DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
-        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+        driverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                 .updateChildren(driverUpdateState)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override

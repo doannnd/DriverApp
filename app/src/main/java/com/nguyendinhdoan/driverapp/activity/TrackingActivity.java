@@ -10,11 +10,9 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -22,20 +20,19 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.firebase.geofire.GeoQuery;
 import com.firebase.geofire.GeoQueryEventListener;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -50,19 +47,12 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.SquareCap;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.libraries.places.api.model.Place;
-import com.google.android.libraries.places.api.model.RectangularBounds;
-import com.google.android.libraries.places.api.model.TypeFilter;
-import com.google.android.libraries.places.widget.Autocomplete;
-import com.google.android.libraries.places.widget.AutocompleteActivity;
-import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -70,7 +60,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.PolyUtil;
-import com.google.maps.android.SphericalUtil;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -96,18 +85,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class TrackingActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener{
+public class TrackingActivity extends AppCompatActivity implements OnMapReadyCallback, View.OnClickListener {
 
     private static final String TAG = "TrackingActivity";
     public static final long LOCATION_REQUEST_INTERVAL = 5000L;
@@ -123,8 +112,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private static final float CIRCLE_STROKE_WIDTH = 5.0F;
     private static final int CIRCLE_FILL_COLOR = 0x220000FF;
 
-    private static final String LOCATION_ADDRESS = "LOCATION_ADDRESS_KEY";
-    private static final String DESTINATION_ADDRESS = "DESTINATION_ADDRESS_KEY";
     private static final String DIRECTION_LEGS_KEY = "legs";
     private static final String DIRECTION_DURATION_KEY = "duration";
     private static final String DIRECTION_DISTANCE_KEY = "distance";
@@ -141,49 +128,43 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     public static final String LOCATION_START_INTENT_KEY = "LOCATION_START_INTENT_KEY";
     public static final String LOCATION_END_INTENT_KEY = "LOCATION_END_INTENT_KEY";
     private static final String USER_TABLE_NAME = "users";
-
-    private static final String NV_CODE = "VN";
-    private static final double DISTANCE_RESTRICT = 100000;
-    private static final double HEADING_NORTH = 0;
-    private static final double HEADING_SOUTH = 180;
-    private static final int AUTOCOMPLETE_REQUEST_CODE = 9000;
     public static final String USER_ID_TRACK_KEY = "USER_ID_TRACK_KEY";
+    public static final String PICKUP_REQUEST_TABLE_NAME = "pickup_request";
+    public static final double USER_RADIUS = 0.05;
+    public static final int BOTTOM_MAP = 30;
+    public static final int RIGHT_MAP = 30;
+    public static final int TOP_MAP = 0;
+    public static final int LEFT_MAP = 0;
+    public static final int SUBJECT_KEY = 0;
 
 
     private ProgressBar loadingProgressBar;
     private GoogleMap mTrackingMap;
     private Button startTripButton;
     private Toolbar trackingToolbar;
-    private TextView userDestinationEditText;
-    private ImageView directionImageView;
+    private TextView destinationTextView;
+    private FloatingActionButton directionButton;
+    private CircleImageView avatarImageView;
 
-    private ImageView userDetailImageView;
-    private BottomSheetBehavior userDetailBehavior;
     private TextView userNameTextView;
-    private TextView userPhoneTextView;
+    private ImageView phoneImageView;
     private Button cancelTripButton;
 
-    private double latitudeUser;
-    private double longitudeUser;
     private String userId;
 
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
     private LocationRequest locationRequest;
-    private Marker driverMarker;
     private Polyline trackingPolyline;
 
     private IGoogleAPI mServices;
     private IFirebaseMessagingAPI mFirebaseService;
     private List<LatLng> directionPolylineList;
 
-    private String destinationAddress;
-
     private Location pickupLocation;
-    private double distanceUserAndDriver;
     private String unitDistance;
-
     private String phoneNumberUser;
+    private GeoLocation userLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -205,9 +186,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     @SuppressLint("ClickableViewAccessibility")
     private void addEvents() {
         startTripButton.setOnClickListener(this);
-        directionImageView.setOnClickListener(this);
-        userDetailImageView.setOnClickListener(this);
-        userPhoneTextView.setOnClickListener(this);
+        directionButton.setOnClickListener(this);
+        phoneImageView.setOnClickListener(this);
         cancelTripButton.setOnClickListener(this);
     }
 
@@ -217,17 +197,15 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
         loadingProgressBar = findViewById(R.id.loading_progress_bar);
         startTripButton = findViewById(R.id.start_trip_button);
-        directionImageView = findViewById(R.id.direction_image_view);
-        userDestinationEditText = findViewById(R.id.user_destination_text_view);
-        userDetailImageView = findViewById(R.id.detail_user_image_view);
+        directionButton = findViewById(R.id.direction_button);
+        destinationTextView = findViewById(R.id.destination_text_view);
 
         View view = findViewById(R.id.user_detail_bottom_sheet);
-        userDetailBehavior = BottomSheetBehavior.from(view);
 
+        avatarImageView = view.findViewById(R.id.avatar_image_view);
         userNameTextView = view.findViewById(R.id.user_name_text_view);
-        userPhoneTextView = view.findViewById(R.id.user_phone_text_view);
+        phoneImageView = view.findViewById(R.id.phone_image_view);
         cancelTripButton = view.findViewById(R.id.cancel_trip_button);
-
     }
 
     private void setupToolbar() {
@@ -239,10 +217,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
     private void setupUI() {
         if (getIntent() != null) {
-            latitudeUser = getIntent().getDoubleExtra(UserCallActivity.LAT_USER, -1);
-            longitudeUser = getIntent().getDoubleExtra(UserCallActivity.LNG_USER, -1);
             userId = getIntent().getStringExtra(UserCallActivity.ID_USER);
-
             showUserDetail(userId);
         }
         // initial fused location provider
@@ -260,6 +235,14 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
         }
+
+        // add my button location in bottom right
+        View locationButton = ((View) Objects.requireNonNull(Objects.requireNonNull(mapFragment).getView())
+                .findViewById(Integer.parseInt("1")).getParent()).findViewById(Integer.parseInt("2"));
+        RelativeLayout.LayoutParams rlp = (RelativeLayout.LayoutParams) locationButton.getLayoutParams();
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_TOP, SUBJECT_KEY);
+        rlp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+        rlp.setMargins(LEFT_MAP, TOP_MAP, RIGHT_MAP, BOTTOM_MAP);
     }
 
     private void startLocationUpdates() {
@@ -315,18 +298,15 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             final double driverLatitude = Common.currentLocation.getLatitude();
             final double driverLongitude = Common.currentLocation.getLongitude();
 
-            if (driverMarker != null) {
-                driverMarker.remove(); // if marker existed --> delete
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                return;
             }
 
-            // draw marker on google map
-            driverMarker = mTrackingMap.addMarker(new MarkerOptions()
-                    .icon(BitmapDescriptorFactory.defaultMarker())
-                    .position(new LatLng(driverLatitude, driverLongitude))
-                    .title(getString(R.string.title_of_you))
-            );
-
-            driverMarker.showInfoWindow();
+            mTrackingMap.setMyLocationEnabled(true);
+            mTrackingMap.getUiSettings().setMyLocationButtonEnabled(true);
 
             // move camera
             mTrackingMap.moveCamera(
@@ -339,16 +319,55 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 trackingPolyline.remove();
             }
 
-            handleDriverDirection();
+            displayUserLocation();
         }
     }
 
-    private void handleDriverDirection() {
+    private void displayUserLocation() {
+        mTrackingMap.clear();
+
+        if (userId != null) {
+            DatabaseReference pickupRequestTable = FirebaseDatabase.getInstance().getReference(PICKUP_REQUEST_TABLE_NAME);
+            GeoFire driverLocationGeoFire = new GeoFire(pickupRequestTable);
+            driverLocationGeoFire.getLocation(userId, new com.firebase.geofire.LocationCallback() {
+                @Override
+                public void onLocationResult(String key, GeoLocation location) {
+                    if (location != null) {
+                        userLocation = location;
+                        // show user with icon car on google map
+                        mTrackingMap.addMarker(new MarkerOptions()
+                                .position(new LatLng(location.latitude, location.longitude))
+                                .icon(BitmapDescriptorFactory.defaultMarker())
+                        );
+
+                        // draw  the circle with radius = 50m
+                        mTrackingMap.addCircle(new CircleOptions()
+                                .center(new LatLng(location.latitude, location.longitude))
+                                .radius(CIRCLE_RADIUS)
+                                .strokeColor(ContextCompat.getColor(TrackingActivity.this, R.color.blue_light))
+                                .strokeWidth(CIRCLE_STROKE_WIDTH)
+                                .fillColor(CIRCLE_FILL_COLOR)
+                        );
+
+                        handleDriverDirection(location);
+                        handleGeoFencing(location);
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.e(TAG, "error load location of driver: " + databaseError);
+                }
+            });
+        }
+    }
+
+    private void handleDriverDirection(GeoLocation location) {
         // save current position
         double currentLatitude = Common.currentLocation.getLatitude();
         double currentLongitude = Common.currentLocation.getLongitude();
         LatLng currentPosition = new LatLng(currentLatitude, currentLongitude);
-        LatLng destinationLocation = new LatLng(latitudeUser, longitudeUser);
+        LatLng destinationLocation = new LatLng(location.latitude, location.longitude);
 
         try {
             //building direction url for driver
@@ -384,18 +403,19 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             JSONObject routeObject = routes.getJSONObject(0);
             JSONArray legs = routeObject.getJSONArray(DIRECTION_LEGS_KEY);
             JSONObject legObject = legs.getJSONObject(0);
-            destinationAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
-            // display address user on edit text
 
             JSONObject distance = legObject.getJSONObject(DIRECTION_DISTANCE_KEY);
             String km = distance.getString(DIRECTION_TEXT_KEY);
             Log.d(TAG, "km: " + distance.getString(DIRECTION_TEXT_KEY));
 
-            distanceUserAndDriver = Double.parseDouble(km.replaceAll("[^0-9\\\\.]", ""));
+            double distanceUserAndDriver = Double.parseDouble(km.replaceAll("[^0-9\\\\.]", ""));
             String[] units = km.split(" ");
             unitDistance = units[1];
             Log.d(TAG, "distance user and driver: " + distanceUserAndDriver);
             Log.d(TAG, "unit distance: " + unitDistance);
+
+            String userAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
+            destinationTextView.setText(userAddress);
 
             // handle and decode direction json ==> string
             for (int i = 0; i < routes.length(); i++) {
@@ -415,17 +435,17 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
     private void showDirectionOnMap(List<LatLng> directionPolylineList) {
         // adjusting bound
-            if (unitDistance.equals("km")) {
-                LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                for (LatLng latLng : directionPolylineList) {
-                    builder.include(latLng);
-                }
-
-                // handle display camera
-                LatLngBounds bounds = builder.build();
-                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, DIRECTION_PADDING);
-                mTrackingMap.moveCamera(cameraUpdate);
+        if (unitDistance.equals("km")) {
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+            for (LatLng latLng : directionPolylineList) {
+                builder.include(latLng);
             }
+
+            // handle display camera
+            LatLngBounds bounds = builder.build();
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, DIRECTION_PADDING);
+            mTrackingMap.moveCamera(cameraUpdate);
+        }
 
         // handle information display of direction gray polyline
         PolylineOptions grayPolylineOptions = new PolylineOptions();
@@ -438,13 +458,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
         // display black polyline overlay gray polyline on google map
         trackingPolyline = mTrackingMap.addPolyline(grayPolylineOptions);
-
-        // display default marker at destination position
-       /* int destinationPosition = directionPolylineList.size() - 1;
-        mTrackingMap.addMarker(new MarkerOptions()
-                .position(directionPolylineList.get(destinationPosition))
-                .title("user")
-        );*/
     }
 
     private void buildLocationRequest() {
@@ -461,52 +474,29 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
     private void showSnackBar(String message) {
         Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT);
-       /* View view = snackbar.getView();
-        view.setBackgroundColor(getResources().getColor(R.color.colorWhite));
-        TextView textSnack = view.findViewById(android.support.design.R.id.snackbar_text);
-        textSnack.setTextColor(getResources().getColor(R.color.colorBlack));*/
         snackbar.show();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        /*stopLocationUpdates();
-        mTrackingMap.clear();*/
+        stopLocationUpdates();
+        mTrackingMap.clear();
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mTrackingMap = googleMap;
-
-        mTrackingMap.getUiSettings().setZoomControlsEnabled(true);
-
-        // show marker of user: destination driver go
-        mTrackingMap.addCircle(new CircleOptions()
-                .center(new LatLng(latitudeUser, longitudeUser))
-                .radius(CIRCLE_RADIUS)
-                .strokeColor(ContextCompat.getColor(this, R.color.blue_light))
-                .strokeWidth(CIRCLE_STROKE_WIDTH)
-                .fillColor(CIRCLE_FILL_COLOR)
-        );
-
-      /*  Marker customerMaker = mTrackingMap.addMarker(new MarkerOptions()
-                .position(new LatLng(latitudeUser, longitudeUser))
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_pin))
-                .title("customer")
-        );
-        customerMaker.showInfoWindow();*/
-
-        handleGeoFencing();
     }
 
-    private void handleGeoFencing() {
-        DatabaseReference driverLocationTable = FirebaseDatabase.getInstance().getReference(DriverActivity.DRIVER_LOCATION_TABLE_NAME);
+    private void handleGeoFencing(GeoLocation location) {
+        DatabaseReference driverLocationTable = FirebaseDatabase
+                .getInstance().getReference(DriverActivity.DRIVER_LOCATION_TABLE_NAME);
         GeoFire trackingGeoFire = new GeoFire(driverLocationTable);
 
         GeoQuery trackingGeoQuery = trackingGeoFire.queryAtLocation(
-                new GeoLocation(latitudeUser, longitudeUser),
-                0.05 // 50m
+                new GeoLocation(location.latitude, location.longitude),
+                USER_RADIUS // 50m
         );
 
         trackingGeoQuery.addGeoQueryEventListener(new GeoQueryEventListener() {
@@ -515,13 +505,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 // if driver in radius = 50m --> notification for user ....
                 sendNotificationArrivedToUser(userId);
                 startTripButton.setEnabled(true);
-                if (Common.userDestination != null && Common.destinationLocationUser != null) {
-                    Toast.makeText(TrackingActivity.this, "true", Toast.LENGTH_SHORT).show();
-                    userDestinationEditText.setText(Common.userDestination);
-                } else {
-                    userDestinationEditText.setText("");
-                    Snackbar.make(findViewById(android.R.id.content),"user don't pickup request", Snackbar.LENGTH_LONG).show();
-                }
             }
 
             @Override
@@ -628,11 +611,13 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.start_trip_button) {
-            if (startTripButton.getText().equals("START TRIP")) {
+            if (startTripButton.getText().equals(getString(R.string.start_trip_button_text))) {
+                if (Common.userDestination != null && Common.destinationLocationUser != null) {
+                    destinationTextView.setText(Common.userDestination);
+                }
                 pickupLocation = Common.currentLocation;
                 startTripButton.setText(getString(R.string.drop_off_here));
-                userDestinationEditText.setEnabled(true);
-            } else if (startTripButton.getText().equals("DROP OFF HERE")) {
+            } else if (startTripButton.getText().equals(getString(R.string.drop_off_here))) {
                 calculateCashFee(pickupLocation, Common.currentLocation);
                 // send notification to user
                 sendDropOffNotification(userId);
@@ -640,32 +625,28 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 // update state of driver
                 updateStateDrivers();
             }
-        } else if (v.getId() == R.id.direction_image_view) {
+        } else if (v.getId() == R.id.direction_button) {
             if (startTripButton.isEnabled() && Common.destinationLocationUser != null) {
-                String uriDirectionWithGoogleMap = "google.navigation:q=" + Common.destinationLocationUser.latitude + "," + Common.destinationLocationUser.longitude;
-                Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
-                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-                mapIntent.setPackage("com.google.android.apps.maps");
-                startActivity(mapIntent);
+                openDirectionGoogleMap(Common.destinationLocationUser.latitude,
+                        Common.destinationLocationUser.longitude);
             } else {
-                String uriDirectionWithGoogleMap = "google.navigation:q=" + latitudeUser + "," + longitudeUser;
-                Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
-                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-                mapIntent.setPackage("com.google.android.apps.maps");
-                startActivity(mapIntent);
+                openDirectionGoogleMap(userLocation.latitude, userLocation.longitude);
             }
-        } else if (v.getId() == R.id.detail_user_image_view) {
-            if (userId != null) {
-                showUserDetail(userId);
-                userDetailBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-            }
-        } else if (v.getId() == R.id.user_phone_text_view) {
+        } else if (v.getId() == R.id.phone_image_view) {
             if (phoneNumberUser != null) {
                 callUser(phoneNumberUser);
             }
         } else if (v.getId() == R.id.cancel_trip_button) {
             cancelTripButton();
         }
+    }
+
+    private void openDirectionGoogleMap(double latitude, double longitude) {
+        String uriDirectionWithGoogleMap = "google.navigation:q=" + latitude + "," + longitude;
+        Uri gmmIntentUri = Uri.parse(uriDirectionWithGoogleMap);
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        startActivity(mapIntent);
     }
 
     private void updateStateDrivers() {
@@ -730,26 +711,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     }
 
 
-    private void ResetCancelDriver() {
-        Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("cancel", "0");
-
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
-        driverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                .updateChildren(driverUpdateState)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        if (task.isSuccessful()) {
-                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
-                            Log.d("update", "update state driver success");
-                        } else {
-                            Toast.makeText(TrackingActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-    }
-
     private void callUser(final String userPhoneNumber) {
         Dexter.withActivity(this)
                 .withPermission(Manifest.permission.CALL_PHONE)
@@ -778,23 +739,29 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
     private void showUserDetail(String userId) {
         if (userId != null) {
-            DatabaseReference userTable = FirebaseDatabase.getInstance().getReference(USER_TABLE_NAME)
+            DatabaseReference userTable = FirebaseDatabase.getInstance()
+                    .getReference(USER_TABLE_NAME)
                     .child(userId);
             userTable.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     Driver userPickupRequest = dataSnapshot.getValue(Driver.class);
                     if (userPickupRequest != null) {
+                        // load image
+                        Glide.with(TrackingActivity.this)
+                                .load(userPickupRequest.getAvatarUrl())
+                                .placeholder(R.drawable.ic_profile)
+                                .into(avatarImageView);
+
                         userNameTextView.setText(userPickupRequest.getName());
                         phoneNumberUser = userPickupRequest.getPhone();
-                        userPhoneTextView.setText(phoneNumberUser);
-                        // show call detail
+                        // star user here
                     }
                 }
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
-
+                    Log.e(TAG, "load information of user error " + databaseError);
                 }
             });
         }
@@ -843,7 +810,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                 // save history driver
                                 DatabaseReference historyDriverTable = FirebaseDatabase.getInstance().getReference("history_driver");
                                 History historyDriver = new History(Common.currentDate(), locationAddress, destinationAddress, km, minutes);
-                                historyDriverTable.child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                historyDriverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                                         .push()
                                         .setValue(historyDriver)
                                         .addOnCompleteListener(new OnCompleteListener<Void>() {
@@ -887,7 +854,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                 intentTripDetail.putExtra(LOCATION_END_INTENT_KEY, Common.currentLocation.getLatitude() + "," + Common.currentLocation.getLongitude());
                                 intentTripDetail.putExtra(USER_ID_TRACK_KEY, userId);
 
-                                intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intentTripDetail);
                                 finish();
 
@@ -904,53 +871,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                     });
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    private void autoCompletePlaces() {
-        List<Place.Field> fields = Arrays.asList(Place.Field.ID,
-                Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG);
-        // restrict places only in city
-        LatLng pinLocation = new LatLng(Common.currentLocation.getLatitude(),
-                Common.currentLocation.getLongitude());
-        /*
-         * distance: meter unit: 100000 = 100 km
-         * heading: 0 - north, 180-south
-         * */
-        LatLng northSide = SphericalUtil.computeOffset(pinLocation, DISTANCE_RESTRICT, HEADING_NORTH);
-        LatLng southSide = SphericalUtil.computeOffset(pinLocation, DISTANCE_RESTRICT, HEADING_SOUTH);
-
-        // Start the autocomplete intent.
-        Intent intent = new Autocomplete.IntentBuilder(
-                AutocompleteActivityMode.FULLSCREEN, fields)
-                .setTypeFilter(TypeFilter.ADDRESS)
-                .setCountry(NV_CODE)
-                .setLocationBias(RectangularBounds.newInstance(southSide, northSide))
-                .build(this);
-        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
-            if (resultCode == RESULT_OK && data != null) {
-
-                    Place place = Autocomplete.getPlaceFromIntent(data);
-                    Common.userDestination = place.getName();
-                    Common.destinationLocationUser = place.getLatLng();
-                    Log.d(TAG, "user place address: " + place.getAddress());
-                    Log.d(TAG, "user place name: " + place.getName());
-
-                    userDestinationEditText.setText(Common.userDestination);
-
-            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
-                Status status = Autocomplete.getStatusFromIntent(Objects.requireNonNull(data));
-                Log.d(TAG, status.getStatusMessage());
-            } else if (resultCode == RESULT_CANCELED) {
-                // The user canceled the operation.
-                showSnackBar(getString(R.string.user_cancel_operation));
-            }
         }
     }
 

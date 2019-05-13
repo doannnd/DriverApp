@@ -7,13 +7,9 @@
     tools:context=".activity.TrackingActivity">
 
     <android.support.design.widget.AppBarLayout
-        android:id="@+id/tracking_appbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@id/trip_detail_map"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/tracking_toolbar"
@@ -21,34 +17,19 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/white">
 
-            <ImageView
-                android:id="@+id/direction_image_view"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:contentDescription="@string/direction_image"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_direction" />
-
             <TextView
-                android:id="@+id/user_destination_text_view"
+                android:id="@+id/destination_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
                 android:ellipsize="end"
                 android:fontFamily="@font/amaranth"
                 android:maxLines="1"
-                android:textColor="@android:color/black"
-                android:textSize="16sp" />
-
-            <ImageView
-                android:id="@+id/detail_user_image_view"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end|center_vertical"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="@string/detail_user_image_view"
-                android:scaleType="fitCenter"
-                android:src="@drawable/ic_baseline_list" />
+                android:textColor="@android:color/holo_green_dark"
+                android:textSize="16sp"
+                tools:text="Ha Noi" />
 
         </android.support.v7.widget.Toolbar>
 
@@ -61,7 +42,8 @@
 
         <android.support.constraint.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_marginBottom="75dp">
 
             <fragment
                 android:id="@+id/trip_detail_map"
@@ -80,8 +62,11 @@
                 android:layout_margin="8dp"
                 android:background="@drawable/bg_button_login"
                 android:enabled="false"
+                android:fontFamily="@font/amaranth"
                 android:text="@string/start_trip_button_text"
+                android:textAllCaps="false"
                 android:textColor="@android:color/white"
+                android:textSize="20sp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -100,6 +85,17 @@
 
         </android.support.constraint.ConstraintLayout>
 
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/direction_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="160dp"
+            android:src="@drawable/ic_direction"
+            app:backgroundTint="@android:color/white"
+            app:fabSize="mini" />
+
     </FrameLayout>
 
     <android.support.v4.widget.NestedScrollView
@@ -108,67 +104,69 @@
         android:layout_height="wrap_content"
         android:background="@android:color/white"
         app:behavior_hideable="false"
-        app:behavior_peekHeight="0dp"
+        app:behavior_peekHeight="75dp"
         app:layout_behavior="android.support.design.widget.BottomSheetBehavior">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:orientation="vertical">
 
-            <LinearLayout
+            <android.support.constraint.ConstraintLayout
+                android:id="@+id/root_item"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:orientation="horizontal"
-                android:background="@color/light_blue_gray">
+                android:layout_height="wrap_content"
+                android:padding="8dp">
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/avatar_image_view"
                     android:layout_width="50dp"
                     android:layout_height="50dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     tools:src="@tools:sample/avatars" />
 
                 <TextView
                     android:id="@+id/user_name_text_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:fontFamily="@font/amaranth"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:fontFamily="@font/amaranth"
                     android:textColor="@android:color/black"
-                    android:textSize="18sp"
-                    tools:text="nguyen dinh doan" />
+                    android:textSize="20sp"
+                    app:layout_constraintStart_toEndOf="@+id/avatar_image_view"
+                    app:layout_constraintTop_toTopOf="@+id/avatar_image_view"
+                    app:layout_constraintBottom_toBottomOf="@+id/avatar_image_view"
+                    tools:text="@tools:sample/full_names" />
 
-            </LinearLayout>
+                <ImageView
+                    android:id="@+id/phone_image_view"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="8dp"
+                    android:contentDescription="@string/icon_phone"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_phone_32"
+                    app:layout_constraintBottom_toBottomOf="@id/avatar_image_view"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/avatar_image_view" />
 
-            <TextView
-                android:id="@+id/user_phone_text_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/light_blue_gray"
-                android:drawablePadding="8dp"
-                android:fontFamily="@font/amaranth"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                tools:text="+84 0962539727"
-                android:paddingStart="16dp"
-                android:paddingTop="12dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="12dp"
-                android:drawableStart="@drawable/ic_phone"/>
-
+            </android.support.constraint.ConstraintLayout>
 
             <Button
                 android:id="@+id/cancel_trip_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_margin="8dp"
                 android:background="@color/colorBackgroundUserCall"
+                android:fontFamily="@font/amaranth"
                 android:text="@string/cancel_trip"
-                android:textColor="@android:color/white" />
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="20sp" />
 
         </LinearLayout>
 

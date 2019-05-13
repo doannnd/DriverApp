@@ -78,8 +78,8 @@
     <string name="upload_avatar_failed">upload avatar failed</string>
     <string name="update_infor_success">update infor success</string>
     <string name="update_infor_failed">update infor failed</string>
-    <string name="start_trip_button_text">START TRIP</string>
-    <string name="drop_off_here">DROP OFF HERE</string>
+    <string name="start_trip_button_text">Start Trip</string>
+    <string name="drop_off_here">Drop Off Here</string>
     <string name="title_activity_trip_detail">Map</string>
     <string name="base_fare_text">Base fare:</string>
     <string name="time_text">Time:</string>
@@ -127,4 +127,5 @@
     <string name="_13000">13000</string>
     <string name="_14000">14000</string>
     <string name="_12000">12000</string>
+    <string name="icon_phone">icon phone</string>
 </resources>
