@@ -1,11 +1,15 @@
 package com.nguyendinhdoan.driverapp.activity;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -87,12 +91,18 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_call);
 
+        setupBroadcastReceiver();
         initViews();
         setupUI();
         addEvent();
 
         setupCountDownTimer();
         updateStateDrivers();
+    }
+
+    private void setupBroadcastReceiver() {
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mMessageReceiver, new IntentFilter(MyFirebaseMessaging.MESSAGE_USER_KEY));
     }
 
     private void updateStateDrivers() {
@@ -422,6 +432,17 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                     }
                 });
     }
+
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String message = intent.getStringExtra(MyFirebaseMessaging.MESSAGE_KEY);
+            if (MyFirebaseMessaging.CANCEL_TITLE.equals(message)) {
+                finish();
+            }
+
+        }
+    };
 
     @Override
     protected void onDestroy() {

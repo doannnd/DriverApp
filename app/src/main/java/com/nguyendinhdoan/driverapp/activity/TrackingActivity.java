@@ -2,7 +2,10 @@ package com.nguyendinhdoan.driverapp.activity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
@@ -15,6 +18,7 @@ import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -86,6 +90,7 @@ import com.nguyendinhdoan.driverapp.model.Token;
 import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
+import com.nguyendinhdoan.driverapp.services.MyFirebaseMessaging;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -185,10 +190,16 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tracking);
 
+        setupBroadcastReceiver();
         initViews();
         initGoogleMap();
         setupUI();
         addEvents();
+    }
+
+    private void setupBroadcastReceiver() {
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                mMessageReceiver, new IntentFilter(MyFirebaseMessaging.MESSAGE_TRACKING_KEY));
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -942,4 +953,14 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             }
         }
     }
+
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String message = intent.getStringExtra(MyFirebaseMessaging.MESSAGE_KEY);
+            if (MyFirebaseMessaging.CANCEL_TRIP_TITLE.equals(message)) {
+                finish();
+            }
+        }
+    };
 }
