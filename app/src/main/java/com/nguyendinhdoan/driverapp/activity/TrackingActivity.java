@@ -616,7 +616,12 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                     destinationTextView.setText(Common.userDestination);
                 }
                 pickupLocation = Common.currentLocation;
+                cancelTripButton.setVisibility(View.GONE);
                 startTripButton.setText(getString(R.string.drop_off_here));
+
+                // send message start trip to user
+                startTripButton();
+
             } else if (startTripButton.getText().equals(getString(R.string.drop_off_here))) {
                 calculateCashFee(pickupLocation, Common.currentLocation);
                 // send notification to user
@@ -639,6 +644,46 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         } else if (v.getId() == R.id.cancel_trip_button) {
             cancelTripButton();
         }
+    }
+
+    private void startTripButton() {
+        DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
+
+        tokenTable.orderByKey().equalTo(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
+                            Token token = postSnapshot.getValue(Token.class);
+
+                            Notification notification = new Notification("startTrip", "The driver has started the trip");
+                            if (token != null) {
+                                Sender sender = new Sender(notification, token.getToken());
+
+                                mFirebaseService.sendMessage(sender)
+                                        .enqueue(new Callback<Result>() {
+                                            @Override
+                                            public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
+                                                if (response.isSuccessful()) {
+                                                    //updateCancelDrivers();
+                                                    updateStateDrivers();
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onFailure(@NonNull Call<Result> call, @NonNull Throwable t) {
+                                                Log.e(TAG, "onFailure: error" + t.getMessage());
+                                            }
+                                        });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.e(TAG, "onCancelled: error" + databaseError);
+                    }
+                });
     }
 
     private void openDirectionGoogleMap(double latitude, double longitude) {
@@ -689,7 +734,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                                 if (response.isSuccessful()) {
                                                     //updateCancelDrivers();
                                                     updateStateDrivers();
-                                                    Toast.makeText(TrackingActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
                                                     finish();
                                                 }
                                             }
