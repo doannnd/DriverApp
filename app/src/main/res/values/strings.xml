@@ -128,4 +128,11 @@
     <string name="_14000">14000</string>
     <string name="_12000">12000</string>
     <string name="icon_phone">icon phone</string>
+    <string name="end_game_text">End Game</string>
+    <string name="close_image_view">close image view</string>
+    <string name="sum_text">SUM</string>
+    <string name="cancel_trip_message">The driver has canceled the trip for some reason, please find another driver</string>
+    <string name="state_not_working">not_working</string>
+    <string name="start_trip_message">The driver has started the trip</string>
+    <string name="arrived_message">The driver %s has arrived at your location</string>
 </resources>

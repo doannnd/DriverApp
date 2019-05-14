@@ -107,6 +107,7 @@ public class DriverActivity extends AppCompatActivity
     private static final String PHONE_KEY = "phone";
     private static final String AVATAR_URL_KEY = "avatarUrl";
     public static final String DRIVER_ID_KEY = "DRIVER_ID_KEY";
+    public static final String STATE_KEY = "state";
 
     private SwitchCompat stateDriverSwitch;
     private ProgressBar driverProgressBar;
@@ -159,18 +160,18 @@ public class DriverActivity extends AppCompatActivity
 
     private void updateStateDrivers() {
         Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("state", "not_working");
+        driverUpdateState.put(STATE_KEY, getString(R.string.state_not_working));
 
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference(DriverActivity.DRIVER_TABLE_NAME);
         driverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                 .updateChildren(driverUpdateState)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
                         if (task.isSuccessful()) {
-                            Toast.makeText(DriverActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "UPDATE STATE SUCCESS");
                         } else {
-                            Toast.makeText(DriverActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "UPDATE SATE FAILED");
                         }
                     }
                 });

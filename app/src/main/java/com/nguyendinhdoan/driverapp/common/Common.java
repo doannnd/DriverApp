@@ -78,9 +78,9 @@ public class Common {
                 .build().toString();
     }
 
-    public static String currentDate() {
-        Date date = new Date();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEEE, dd/MM/yyyy", Locale.getDefault());
-        return simpleDateFormat.format(date);
+    public static String getCurrentDate() {
+        Date currentDate = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("hh:mm, dd/MM/yyyy", Locale.getDefault());
+        return simpleDateFormat.format(currentDate);
     }
 }

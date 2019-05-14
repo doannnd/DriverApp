@@ -1,29 +1,20 @@
 package com.nguyendinhdoan.driverapp.model;
 
 public class History {
-    private String date;
-    private String startAddress;
-    private String endAddress;
-    private String distance;
-    private String time;
+
+   private String startAddress;
+   private String endAddress;
+   private String dateTime;
+   private String tripPrice;
 
     public History() {
     }
 
-    public History(String date, String startAddress, String endAddress, String distance, String time) {
-        this.date = date;
+    public History(String startAddress, String endAddress, String dateTime, String tripPrice) {
         this.startAddress = startAddress;
         this.endAddress = endAddress;
-        this.distance = distance;
-        this.time = time;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
+        this.dateTime = dateTime;
+        this.tripPrice = tripPrice;
     }
 
     public String getStartAddress() {
@@ -42,19 +33,19 @@ public class History {
         this.endAddress = endAddress;
     }
 
-    public String getDistance() {
-        return distance;
+    public String getDateTime() {
+        return dateTime;
     }
 
-    public void setDistance(String distance) {
-        this.distance = distance;
+    public void setDateTime(String dateTime) {
+        this.dateTime = dateTime;
     }
 
-    public String getTime() {
-        return time;
+    public String getTripPrice() {
+        return tripPrice;
     }
 
-    public void setTime(String time) {
-        this.time = time;
+    public void setTripPrice(String tripPrice) {
+        this.tripPrice = tripPrice;
     }
 }

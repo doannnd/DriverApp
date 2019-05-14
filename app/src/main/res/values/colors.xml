@@ -19,4 +19,5 @@
     <color name="colorCommentBackground">#FAF8F8</color>
 
     <color name="light_blue_gray">#eaeff2</color>
+    <color name="colorBackgroundCall">#4CAF50</color>
 </resources>

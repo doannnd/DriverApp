@@ -26,7 +26,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
@@ -87,7 +86,6 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -113,22 +111,12 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private static final int CIRCLE_FILL_COLOR = 0x220000FF;
 
     private static final String DIRECTION_LEGS_KEY = "legs";
-    private static final String DIRECTION_DURATION_KEY = "duration";
     private static final String DIRECTION_DISTANCE_KEY = "distance";
     private static final String DIRECTION_ADDRESS_KEY = "end_address";
     private static final String DIRECTION_TEXT_KEY = "text";
-    private static final String START_ADDRESS_KEY = "start_address";
 
-
-    public static final String START_ADDRESS_INTENT_KEY = "START_ADDRESS_INTENT_KEY";
-    public static final String END_ADDRESS_INTENT_KEY = "END_ADDRESS_INTENT_KEY";
-    public static final String TIME_INTENT_KEY = "TIME_INTENT_KEY";
-    public static final String DISTANCE_INTENT_KEY = "DISTANCE_INTENT_KEY";
-    public static final String TOTAL_INTENT_KEY = "TOTAL_INTENT_KEY";
-    public static final String LOCATION_START_INTENT_KEY = "LOCATION_START_INTENT_KEY";
     public static final String LOCATION_END_INTENT_KEY = "LOCATION_END_INTENT_KEY";
     private static final String USER_TABLE_NAME = "users";
-    public static final String USER_ID_TRACK_KEY = "USER_ID_TRACK_KEY";
     public static final String PICKUP_REQUEST_TABLE_NAME = "pickup_request";
     public static final double USER_RADIUS = 0.05;
     public static final int BOTTOM_MAP = 30;
@@ -136,7 +124,19 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     public static final int TOP_MAP = 0;
     public static final int LEFT_MAP = 0;
     public static final int SUBJECT_KEY = 0;
-
+    public static final String TRIP_PRICE_INTENT_KEY = "TRIP_PRICE_INTENT_KEY";
+    public static final String HISTORY_DRIVER_TABLE_NAME = "history_driver";
+    public static final String HISTORY_USER_TABLE_NAME = "history_user";
+    public static final String START_ADDRESS_KEY = "start_address";
+    public static final String END_ADDRESS_KEY = "end_address";
+    public static final int INDEX_ROUTE = 0;
+    public static final int INDEX_LEG = 0;
+    public static final String CANCEL_TRIP_TITLE = "cancelTrip";
+    public static final String STATE_KEY = "state";
+    public static final String DRIVER_TABLE_NAME = "drivers";
+    public static final String START_TRIP_KEY = "startTrip";
+    public static final String DROP_OFF_TITLE = "DropOff";
+    public static final String ARRIVED_TITLE = "Arrived";
 
     private ProgressBar loadingProgressBar;
     private GoogleMap mTrackingMap;
@@ -478,13 +478,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        stopLocationUpdates();
-        mTrackingMap.clear();
-    }
-
-    @Override
     public void onMapReady(GoogleMap googleMap) {
         mTrackingMap = googleMap;
     }
@@ -539,15 +532,17 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                             Token token = postSnapshot.getValue(Token.class);
 
-                            String bodyMessage = String.format("The driver %s has arrived at your location", Common.currentDriver.getName());
-                            Notification notification = new Notification("Arrived", bodyMessage);
+                            String bodyMessage = String.format(getString(R.string.arrived_message),
+                                    Common.currentDriver.getName());
+                            Notification notification = new Notification(ARRIVED_TITLE, bodyMessage);
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 
                                 mFirebaseService.sendMessage(sender)
                                         .enqueue(new Callback<Result>() {
                                             @Override
-                                            public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
+                                            public void onResponse(@NonNull Call<Result> call,
+                                                                   @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
                                                     Log.d(TAG, "onResponse: success send notification");
                                                 }
@@ -569,7 +564,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                 });
     }
 
-    private void sendDropOffNotification(final String userId) {
+    private void sendDropOffNotification(final String tripPrice) {
         DatabaseReference tokenTable = FirebaseDatabase.getInstance().getReference(MyFirebaseIdServices.TOKEN_TABLE_NAME);
 
         tokenTable.orderByKey().equalTo(userId)
@@ -579,7 +574,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                             Token token = postSnapshot.getValue(Token.class);
 
-                            Notification notification = new Notification("DropOff", userId);
+                            Notification notification = new Notification(DROP_OFF_TITLE, tripPrice);
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 
@@ -624,11 +619,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
             } else if (startTripButton.getText().equals(getString(R.string.drop_off_here))) {
                 calculateCashFee(pickupLocation, Common.currentLocation);
-                // send notification to user
-                sendDropOffNotification(userId);
-
-                // update state of driver
-                updateStateDrivers();
             }
         } else if (v.getId() == R.id.direction_button) {
             if (startTripButton.isEnabled() && Common.destinationLocationUser != null) {
@@ -656,7 +646,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                             Token token = postSnapshot.getValue(Token.class);
 
-                            Notification notification = new Notification("startTrip", "The driver has started the trip");
+                            Notification notification = new Notification(
+                                    START_TRIP_KEY, getString(R.string.start_trip_message));
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 
@@ -696,18 +687,18 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
 
     private void updateStateDrivers() {
         Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("state", "not_working");
+        driverUpdateState.put(STATE_KEY, getString(R.string.state_not_working));
 
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference(DRIVER_TABLE_NAME);
         driverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                 .updateChildren(driverUpdateState)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
                         if (task.isSuccessful()) {
-                            Toast.makeText(TrackingActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "UPDATE SATE DRIVERS SUCCESS");
                         } else {
-                            Toast.makeText(TrackingActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "UPDATE STATE DRIVERS FAILED");
                         }
                     }
                 });
@@ -723,7 +714,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                             Token token = postSnapshot.getValue(Token.class);
 
-                            Notification notification = new Notification("cancelTrip", "The driver has canceled the trip for some reason, please find another driver");
+                            Notification notification = new Notification(
+                                    CANCEL_TRIP_TITLE, getString(R.string.cancel_trip_message));
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 
@@ -824,82 +816,34 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                             try {
                                 JSONObject root = new JSONObject(response.body());
                                 JSONArray routes = root.getJSONArray(DIRECTION_ROUTES_KEY);
-                                JSONObject routeObject = routes.getJSONObject(0);
+                                JSONObject routeObject = routes.getJSONObject(INDEX_ROUTE);
                                 JSONArray legs = routeObject.getJSONArray(DIRECTION_LEGS_KEY);
-                                JSONObject legObject = legs.getJSONObject(0);
-
-                                // get time and display on time text view
-                                JSONObject time = legObject.getJSONObject(DIRECTION_DURATION_KEY);
-                                String minutes = time.getString(DIRECTION_TEXT_KEY);
-                                Log.d(TAG, "minutes: " + time.getString(DIRECTION_TEXT_KEY));
-
-                                int timeFormatted = Integer.parseInt(minutes.replaceAll("\\D+", ""));
+                                JSONObject legObject = legs.getJSONObject(INDEX_LEG);
 
                                 // get distance and display on distance text view
                                 JSONObject distance = legObject.getJSONObject(DIRECTION_DISTANCE_KEY);
                                 String km = distance.getString(DIRECTION_TEXT_KEY);
                                 Log.d(TAG, "km: " + distance.getString(DIRECTION_TEXT_KEY));
 
-                                double distanceFormatted = Double.parseDouble(km.replaceAll("[^0-9\\\\.]", ""));
+                                int priceTrip = calculateTripFee(km);
+                                sendDropOffNotification(String.valueOf(priceTrip));
 
-                                /*String finalPrice = String.format(Locale.getDefault(), "%s km + %s minute = $%.2f", distanceFormatted, timeFormatted,
-                                        Common.getPrice(distanceFormatted, timeFormatted));*/
+                                String startAddress = legObject.getString(START_ADDRESS_KEY);
+                                String endAddress = legObject.getString(END_ADDRESS_KEY);
+                                String dateTime = Common.getCurrentDate();
+                                String tripPrice = String.valueOf(priceTrip);
 
-                                // get end address and display on address text view
-                                String destinationAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
-                                String locationAddress = legObject.getString(START_ADDRESS_KEY);
-                                Log.d(TAG, "destination address: " + destinationAddress);
-                                Log.d(TAG, "location address: " + locationAddress);
+                                saveHistoryDriver(startAddress, endAddress, dateTime, tripPrice);
+                                saveHistoryUser(startAddress, endAddress, dateTime, tripPrice);
 
-                                // save history driver
-                                DatabaseReference historyDriverTable = FirebaseDatabase.getInstance().getReference("history_driver");
-                                History historyDriver = new History(Common.currentDate(), locationAddress, destinationAddress, km, minutes);
-                                historyDriverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
-                                        .push()
-                                        .setValue(historyDriver)
-                                        .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                            @Override
-                                            public void onComplete(@NonNull Task<Void> task) {
-                                                if (task.isSuccessful()) {
-                                                    Log.d(TAG, "save history driver success");
-                                                } else {
-                                                    Log.d(TAG, "save history driver failed");
-                                                }
-                                            }
-                                        });
-
-                                // save history user
-                                DatabaseReference historyUserTable = FirebaseDatabase.getInstance().getReference("history_user");
-                                History history = new History(Common.currentDate(), locationAddress, destinationAddress, km, minutes);
-                                historyUserTable.child(userId)
-                                        .push()
-                                        .setValue(history)
-                                        .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                            @Override
-                                            public void onComplete(@NonNull Task<Void> task) {
-                                                if (task.isSuccessful()) {
-                                                    Log.d(TAG, "save history user success");
-                                                } else {
-                                                    Log.d(TAG, "save history user failed");
-                                                }
-                                            }
-                                        });
-
-                                Intent intentTripDetail = new Intent(TrackingActivity.this, TripDetailActivity.class);
-                                intentTripDetail.putExtra(START_ADDRESS_INTENT_KEY, locationAddress);
-                                intentTripDetail.putExtra(END_ADDRESS_INTENT_KEY, destinationAddress);
-                                intentTripDetail.putExtra(TIME_INTENT_KEY, String.valueOf(timeFormatted));
-                                intentTripDetail.putExtra(DISTANCE_INTENT_KEY, String.valueOf(distanceFormatted));
-                                intentTripDetail.putExtra(TOTAL_INTENT_KEY, Common.getPrice(distanceFormatted, timeFormatted));
-                                intentTripDetail.putExtra(LOCATION_START_INTENT_KEY,
-                                        String.format(Locale.getDefault(), "%f,%f",
-                                                pickupLocation.getLatitude(), pickupLocation.getLongitude())
-                                );
-                                intentTripDetail.putExtra(LOCATION_END_INTENT_KEY, Common.currentLocation.getLatitude() + "," + Common.currentLocation.getLongitude());
-                                intentTripDetail.putExtra(USER_ID_TRACK_KEY, userId);
-
-                                intentTripDetail.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(intentTripDetail);
+                                Intent intentEndGame = new Intent(
+                                        TrackingActivity.this, EndGameActivity.class);
+                                intentEndGame.putExtra(TRIP_PRICE_INTENT_KEY, String.valueOf(priceTrip));
+                                intentEndGame.putExtra(LOCATION_END_INTENT_KEY, new LatLng(
+                                        Common.currentLocation.getLatitude(),
+                                        Common.currentLocation.getLongitude()));
+                                intentEndGame.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(intentEndGame);
                                 finish();
 
 
@@ -918,6 +862,73 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         }
     }
 
+    private void saveHistoryUser(String startAddress, String endAddress, String dateTime, String tripPrice) {
+        DatabaseReference historyUserTable = FirebaseDatabase.getInstance().getReference(HISTORY_USER_TABLE_NAME);
+        History history = new History(startAddress, endAddress, dateTime, tripPrice);
+        historyUserTable.child(userId)
+                .push()
+                .setValue(history)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "save history user success");
+                        } else {
+                            Log.d(TAG, "save history user failed");
+                        }
+                    }
+                });
+    }
+
+    private void saveHistoryDriver(String startAddress, String endAddress, String dateTime, String tripPrice) {
+        DatabaseReference historyDriverTable = FirebaseDatabase.getInstance().getReference(HISTORY_DRIVER_TABLE_NAME);
+        History historyDriver = new History(startAddress, endAddress, dateTime, tripPrice);
+        historyDriverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
+                .push()
+                .setValue(historyDriver)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Log.d(TAG, "save history driver success");
+                        } else {
+                            Log.d(TAG, "save history driver failed");
+                        }
+                    }
+                });
+    }
+
+    private int calculateTripFee(String distance) {
+        Log.d(TAG, "distance: " + distance);
+        String[] distances = distance.split(" ");
+        String valueDistance = distances[0];
+        String unitDistance = distances[1];
+
+        switch (unitDistance) {
+            case "m": {
+                double price = Double.parseDouble(Common.currentDriver.getZeroToTwo());
+                return (int) (price / 1000);
+            }
+            case "km": {
+                double valueDistanceFormat = Double.parseDouble(valueDistance);
+                if (valueDistanceFormat <= 2) {
+                    double price = valueDistanceFormat * Double.parseDouble(Common.currentDriver.getZeroToTwo());
+                    return (int) (price / 1000);
+                } else if (valueDistanceFormat > 2 && valueDistanceFormat <= 10) {
+                    double price = valueDistanceFormat * Double.parseDouble(Common.currentDriver.getThreeToTen());
+                    return (int) (price / 1000);
+                } else if (valueDistanceFormat > 10 && valueDistanceFormat <= 20) {
+                    double price = valueDistanceFormat * Double.parseDouble(Common.currentDriver.getElevenToTwenty());
+                    return (int) (price / 1000);
+                } else if (valueDistanceFormat > 20) {
+                    double price = valueDistanceFormat * Double.parseDouble(Common.currentDriver.getBiggerTwenty());
+                    return (int) (price / 1000);
+                }
+            }
+        }
+        return 0;
+    }
+
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -927,4 +938,11 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             }
         }
     };
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopLocationUpdates();
+        mTrackingMap.clear();
+    }
 }
