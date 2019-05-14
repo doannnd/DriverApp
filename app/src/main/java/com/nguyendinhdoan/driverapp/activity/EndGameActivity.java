@@ -12,6 +12,9 @@ import android.widget.TextView;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
@@ -19,14 +22,15 @@ import com.nguyendinhdoan.driverapp.common.Common;
 public class EndGameActivity extends AppCompatActivity
         implements OnMapReadyCallback, View.OnClickListener {
 
-    private static final String TAG = "EndGameActivity";
-
     private Toolbar endGameToolbar;
     private ImageView closeImageView;
     private TextView dateTimeTextView;
     private TextView tripPriceTextView;
 
     private GoogleMap mMap;
+    private String tripPrice;
+    private  LatLng destinationLocation;
+    private String endAddress;
 
     public static Intent start(Context context) {
         return new Intent(context, EndGameActivity.class);
@@ -57,6 +61,24 @@ public class EndGameActivity extends AppCompatActivity
     private void displayInforUI() {
         // load date time
         dateTimeTextView.setText(Common.getCurrentDate());
+
+        if (getIntent() != null) {
+            tripPrice = getIntent().getStringExtra(TrackingActivity.TRIP_PRICE_INTENT_KEY);
+            destinationLocation = getIntent().getParcelableExtra(TrackingActivity.LOCATION_END_INTENT_KEY);
+            endAddress = getIntent().getStringExtra(TrackingActivity.END_ADDRESS_INTENT_KEY);
+        }
+
+        if (tripPrice != null) {
+            tripPriceTextView.setText(getString(R.string.trip_price_text, tripPrice));
+        }
+
+        if (destinationLocation != null && endAddress != null) {
+            mMap.addMarker(
+                    new MarkerOptions().position(destinationLocation)
+                    .icon(BitmapDescriptorFactory.defaultMarker())
+                    .title(endAddress)
+            );
+        }
     }
 
     private void setupToolbar() {

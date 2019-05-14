@@ -5,13 +5,13 @@
     android:layout_margin="16dp"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    app:cardCornerRadius="5dp">
+    app:cardCornerRadius="3dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:padding="16dp"
+
         android:orientation="vertical">
 
         <TextView
@@ -23,66 +23,21 @@
             android:textColor="@android:color/black"
             tools:text="TUESDAY, 10/5/2019"/>
 
-        <TextView
-            android:id="@+id/start_address_text_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center_vertical"
-            android:fontFamily="@font/amaranth"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            tools:text="Unnamed Road, ha loi, me linh"
-            android:drawableStart="@drawable/ic_current_location"
-            android:drawablePadding="8dp"
-            android:ellipsize="end"
-            android:maxLines="1"/>
+        <include layout="@layout/place_layout" />
 
         <TextView
-            android:id="@+id/end_address_text_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center_vertical"
-            android:fontFamily="@font/amaranth"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            tools:text="Unnamed Road, hoan kiem, ha noi"
-            android:drawableStart="@drawable/ic_go_location"
-            android:drawablePadding="8dp"
-            android:ellipsize="end"
-            android:maxLines="1"/>
-
-        <LinearLayout
+            android:id="@+id/trip_price_text_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp">
-
-            <TextView
-                android:id="@+id/distance_text_view"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="@font/amaranth"
-                android:textSize="16sp"
-                android:textColor="@android:color/black"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                tools:text="1km"/>
-
-            <TextView
-                android:id="@+id/time_text_view"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="16dp"
-                android:fontFamily="@font/amaranth"
-                android:textSize="16sp"
-                android:textColor="@android:color/black"
-                tools:text="3 minutes"/>
-
-        </LinearLayout>
+            android:background="@color/light_blue_gray"
+            android:fontFamily="@font/amaranth"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="12dp"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            tools:text="Estimate fare: VND 10K" />
 
     </LinearLayout>
 

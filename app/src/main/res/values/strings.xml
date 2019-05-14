@@ -134,5 +134,10 @@
     <string name="cancel_trip_message">The driver has canceled the trip for some reason, please find another driver</string>
     <string name="state_not_working">not_working</string>
     <string name="start_trip_message">The driver has started the trip</string>
-    <string name="arrived_message">The driver %s has arrived at your location</string>
+    <string name="arrived_message">The driver %s arrived</string>
+    <string name="pick_up">PICK-UP</string>
+    <string name="drop_off">DROP-OFF</string>
+    <string name="icon_green">icon green</string>
+    <string name="icon_blue">icon blue</string>
+    <string name="trip_price_text">VND %sK</string>
 </resources>

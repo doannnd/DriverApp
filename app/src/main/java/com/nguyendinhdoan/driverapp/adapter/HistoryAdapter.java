@@ -34,11 +34,10 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int position) {
         History history = historyList.get(position);
 
-        viewHolder.dateTimeTextView.setText(history.getDate());
+        viewHolder.dateTimeTextView.setText(history.getDateTime());
         viewHolder.startAddressTextView.setText(history.getStartAddress());
         viewHolder.endAddressTextView.setText(history.getEndAddress());
-        viewHolder.distanceTextView.setText(history.getDistance());
-        viewHolder.timeTextView.setText(history.getTime());
+        viewHolder.tripPriceTextView.setText(context.getString(R.string.trip_price_text, history.getTripPrice()));
     }
 
     @Override
@@ -51,17 +50,15 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         private TextView dateTimeTextView;
         private TextView startAddressTextView;
         private TextView endAddressTextView;
-        private TextView distanceTextView;
-        private TextView timeTextView;
+        private TextView tripPriceTextView;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
 
             dateTimeTextView = itemView.findViewById(R.id.date_time_text_view);
-            startAddressTextView = itemView.findViewById(R.id.start_address_text_view);
-            endAddressTextView = itemView.findViewById(R.id.end_address_text_view);
-            distanceTextView = itemView.findViewById(R.id.distance_text_view);
-            timeTextView = itemView.findViewById(R.id.time_text_view);
+            startAddressTextView = itemView.findViewById(R.id.tv_pick_up_address);
+            endAddressTextView = itemView.findViewById(R.id.tv_drop_off_address);
+            tripPriceTextView = itemView.findViewById(R.id.trip_price_text_view);
         }
     }
 }

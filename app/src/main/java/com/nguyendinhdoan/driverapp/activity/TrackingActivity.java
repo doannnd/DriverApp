@@ -137,6 +137,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     public static final String START_TRIP_KEY = "startTrip";
     public static final String DROP_OFF_TITLE = "DropOff";
     public static final String ARRIVED_TITLE = "Arrived";
+    public static final String END_ADDRESS_INTENT_KEY = "END_ADDRESS_INTENT_KEY";
 
     private ProgressBar loadingProgressBar;
     private GoogleMap mTrackingMap;
@@ -842,6 +843,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                 intentEndGame.putExtra(LOCATION_END_INTENT_KEY, new LatLng(
                                         Common.currentLocation.getLatitude(),
                                         Common.currentLocation.getLongitude()));
+                                intentEndGame.putExtra(END_ADDRESS_INTENT_KEY, endAddress);
                                 intentEndGame.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intentEndGame);
                                 finish();
