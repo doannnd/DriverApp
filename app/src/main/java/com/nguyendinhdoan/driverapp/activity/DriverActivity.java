@@ -431,7 +431,7 @@ public class DriverActivity extends AppCompatActivity
         );
 
         // hide progress bar complete display current location
-        driverProgressBar.setVisibility(View.VISIBLE);
+        driverProgressBar.setVisibility(View.GONE);
 
     }
 
