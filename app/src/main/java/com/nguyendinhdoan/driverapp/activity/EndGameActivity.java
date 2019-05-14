@@ -9,11 +9,13 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
@@ -21,6 +23,9 @@ import com.nguyendinhdoan.driverapp.common.Common;
 
 public class EndGameActivity extends AppCompatActivity
         implements OnMapReadyCallback, View.OnClickListener {
+
+    private static final float GOOGLE_MAP_ZOOM = 15.0F;
+    public static final String DRIVER_RESTART_KEY = "DRIVER_RESTART_KEY";
 
     private Toolbar endGameToolbar;
     private ImageView closeImageView;
@@ -72,13 +77,6 @@ public class EndGameActivity extends AppCompatActivity
             tripPriceTextView.setText(getString(R.string.trip_price_text, tripPrice));
         }
 
-        if (destinationLocation != null && endAddress != null) {
-            mMap.addMarker(
-                    new MarkerOptions().position(destinationLocation)
-                    .icon(BitmapDescriptorFactory.defaultMarker())
-                    .title(endAddress)
-            );
-        }
     }
 
     private void setupToolbar() {
@@ -107,12 +105,28 @@ public class EndGameActivity extends AppCompatActivity
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        if (destinationLocation != null && endAddress != null) {
+           Marker marker = mMap.addMarker(
+                    new MarkerOptions().position(destinationLocation)
+                            .icon(BitmapDescriptorFactory.defaultMarker())
+                            .title(endAddress)
+            );
+            marker.showInfoWindow();
+
+            mMap.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                            destinationLocation, GOOGLE_MAP_ZOOM
+                    )
+            );
+        }
     }
 
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.close_image_view) {
             Intent intentUser = DriverActivity.start(this);
+            intentUser.putExtra(DRIVER_RESTART_KEY, getString(R.string.driver_restart));
             intentUser.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intentUser);
             finish();

@@ -34,7 +34,7 @@ dependencies {
     implementation "com.google.firebase:firebase-auth:$firebase_auth"
     implementation "com.google.firebase:firebase-database:$firebase_database"
     implementation "com.google.firebase:firebase-messaging:$firebase_messaging"
-    implementation 'com.google.firebase:firebase-storage:16.1.0'
+    implementation 'com.google.firebase:firebase-storage:17.0.0'
     // google play services
     implementation "com.google.android.gms:play-services-maps:$play_services_maps"
     implementation "com.google.android.gms:play-services-location:$play_services_location"

@@ -140,4 +140,7 @@
     <string name="icon_green">icon green</string>
     <string name="icon_blue">icon blue</string>
     <string name="trip_price_text">VND %sK</string>
+    <string name="driver_restart">driver restart</string>
+    <string name="state_working">working</string>
+    <string name="cancel_message">Driver cancel booking from user</string>
 </resources>

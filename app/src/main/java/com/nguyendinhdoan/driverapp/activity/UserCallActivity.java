@@ -65,6 +65,9 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
 
     public static final long COUNT_DOWN_INTERVAL = 1000;
     public static final long INITIAL_COUNT_DOWN = 30000;
+    public static final String STATE_KEY = "state";
+    public static final String DRIVER_TABLE_NAME = "drivers";
+    public static final String CANCEL_TITLE = "cancel";
 
     private TextView timeTextView;
     private TextView distanceTextView;
@@ -94,7 +97,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         addEvent();
 
         setupCountDownTimer();
-        updateStateDrivers();
+        updateStateDriverWorking();
     }
 
     private void setupBroadcastReceiver() {
@@ -102,21 +105,21 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                 mMessageReceiver, new IntentFilter(MyFirebaseMessaging.MESSAGE_USER_KEY));
     }
 
-    private void updateStateDrivers() {
+    private void updateStateDriverWorking() {
         // create object update
         Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("state", "working");
+        driverUpdateState.put(STATE_KEY, getString(R.string.state_working));
 
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference(DRIVER_TABLE_NAME);
         driverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                 .updateChildren(driverUpdateState)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
                         if (task.isSuccessful()) {
-                            Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "UPDATE STATE SUCCESS");
                         } else {
-                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "UPDATE SATE FAILED");
                         }
                     }
                 });
@@ -327,8 +330,8 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                         for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                             Token token = postSnapshot.getValue(Token.class);
 
-                            String bodyMessage = "Driver cancel booking from user";
-                            Notification notification = new Notification("cancel", bodyMessage);
+                            String bodyMessage = getString(R.string.cancel_message);
+                            Notification notification = new Notification(CANCEL_TITLE, bodyMessage);
                             if (token != null) {
                                 Sender sender = new Sender(notification, token.getToken());
 
@@ -337,9 +340,7 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
-                                                    //updateCancelDriver();
-                                                    updateStateDriver();
-                                                    Toast.makeText(UserCallActivity.this, "cancel booking", Toast.LENGTH_SHORT).show();
+                                                    updateStateDriverNotWorking();
                                                     finish();
                                                 }
                                             }
@@ -360,25 +361,25 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
                 });
     }
 
-    private void updateStateDriver() {
+    private void updateStateDriverNotWorking() {
         Map<String, Object> driverUpdateState = new HashMap<>();
-        driverUpdateState.put("state", "not_working");
+        driverUpdateState.put(STATE_KEY, getString(R.string.state_not_working));
 
-        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference("drivers");
+        DatabaseReference driverTable = FirebaseDatabase.getInstance().getReference(DRIVER_TABLE_NAME);
         driverTable.child(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid())
                 .updateChildren(driverUpdateState)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
                         if (task.isSuccessful()) {
-                            //Toast.makeText(UserCallActivity.this, "update state driver success", Toast.LENGTH_SHORT).show();
-                            Log.d("update", "update state driver success");
+                            Log.d(TAG, "UPDATE STATE SUCCESS");
                         } else {
-                            Toast.makeText(UserCallActivity.this, "update state driver failed", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "UPDATE SATE FAILED");
                         }
                     }
                 });
     }
+
 
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override

@@ -2,17 +2,15 @@ package com.nguyendinhdoan.driverapp.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -26,7 +24,7 @@ import com.nguyendinhdoan.driverapp.model.History;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HistoryActivity extends AppCompatActivity {
+public class HistoryActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String HISTORY_TABLE_NAME = "history_driver";
     private Toolbar myRoutesToolbar;
@@ -46,7 +44,11 @@ public class HistoryActivity extends AppCompatActivity {
 
         initViews();
         setupData();
-        //initRecyclerView();
+        addEvents();
+    }
+
+    private void addEvents() {
+        backImageView.setOnClickListener(this);
     }
 
     private void setupData() {
@@ -87,22 +89,22 @@ public class HistoryActivity extends AppCompatActivity {
         setupToolbar();
         myRoutesRecyclerView = findViewById(R.id.my_routes_recycler_view);
         backImageView = findViewById(R.id.back_image_view);
-
-        backImageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = DriverActivity.start(HistoryActivity.this);
-                intent.putExtra("restart", "history");
-                startActivity(intent);
-                finish();
-            }
-        });
     }
 
     private void setupToolbar() {
         setSupportActionBar(myRoutesToolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.back_image_view) {
+            Intent intent = DriverActivity.start(HistoryActivity.this);
+            intent.putExtra(EndGameActivity.DRIVER_RESTART_KEY, getString(R.string.driver_restart));
+            startActivity(intent);
+            finish();
         }
     }
 }

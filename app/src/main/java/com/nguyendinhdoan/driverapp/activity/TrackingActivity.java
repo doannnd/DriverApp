@@ -657,8 +657,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                             @Override
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
-                                                    //updateCancelDrivers();
-                                                    updateStateDrivers();
+                                                    Log.d(TAG, "SEND MESSAGE START TRIP SUCCESS");
                                                 }
                                             }
 
@@ -686,7 +685,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         startActivity(mapIntent);
     }
 
-    private void updateStateDrivers() {
+    private void updateStateDriverNotWorking() {
         Map<String, Object> driverUpdateState = new HashMap<>();
         driverUpdateState.put(STATE_KEY, getString(R.string.state_not_working));
 
@@ -726,7 +725,7 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                             public void onResponse(@NonNull Call<Result> call, @NonNull Response<Result> response) {
                                                 if (response.isSuccessful()) {
                                                     //updateCancelDrivers();
-                                                    updateStateDrivers();
+                                                    updateStateDriverNotWorking();
                                                     finish();
                                                 }
                                             }
@@ -848,7 +847,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
                                 startActivity(intentEndGame);
                                 finish();
 
-
+                                // fix double click
+                                startTripButton.setEnabled(false);
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }

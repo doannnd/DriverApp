@@ -21,7 +21,10 @@
             android:fontFamily="@font/amaranth"
             android:textSize="20sp"
             android:textColor="@android:color/black"
-            tools:text="TUESDAY, 10/5/2019"/>
+            tools:text="TUESDAY, 10/5/2019"
+            android:paddingStart="16dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="16dp"/>
 
         <include layout="@layout/place_layout" />
 

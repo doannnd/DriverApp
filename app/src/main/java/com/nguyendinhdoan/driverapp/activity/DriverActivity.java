@@ -30,7 +30,6 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.geofire.GeoFire;
@@ -146,19 +145,21 @@ public class DriverActivity extends AppCompatActivity
         setupUI();
         addEvents();
 
+        restartScreen();
+        updateStateDriverNotWorking();
+    }
+
+    private void restartScreen() {
         if (getIntent() != null) {
-            String message = getIntent().getStringExtra("restart");
+            String message = getIntent().getStringExtra(EndGameActivity.DRIVER_RESTART_KEY);
             if (message != null) {
                 stateDriverSwitch.setChecked(true);
                 FirebaseDatabase.getInstance().goOnline();
-                Toast.makeText(this, "update driver activity", Toast.LENGTH_LONG).show();
             }
         }
-
-        updateStateDrivers();
     }
 
-    private void updateStateDrivers() {
+    private void updateStateDriverNotWorking() {
         Map<String, Object> driverUpdateState = new HashMap<>();
         driverUpdateState.put(STATE_KEY, getString(R.string.state_not_working));
 
@@ -430,7 +431,7 @@ public class DriverActivity extends AppCompatActivity
         );
 
         // hide progress bar complete display current location
-        driverProgressBar.setVisibility(View.INVISIBLE);
+        driverProgressBar.setVisibility(View.VISIBLE);
 
     }
 
