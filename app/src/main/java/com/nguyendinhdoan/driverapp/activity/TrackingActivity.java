@@ -608,8 +608,8 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     public void onClick(View v) {
         if (v.getId() == R.id.start_trip_button) {
             if (startTripButton.getText().equals(getString(R.string.start_trip_button_text))) {
-                if (Common.userDestination != null && Common.destinationLocationUser != null) {
-                    destinationTextView.setText(Common.userDestination);
+                if (Common.destinationAddressUser != null && Common.destinationLocationUser != null) {
+                    destinationTextView.setText(Common.destinationAddressUser);
                 }
                 pickupLocation = Common.currentLocation;
                 cancelTripButton.setVisibility(View.GONE);
@@ -946,5 +946,6 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
         super.onDestroy();
         stopLocationUpdates();
         mTrackingMap.clear();
+
     }
 }

@@ -20,7 +20,8 @@ public class Common {
     public static Driver currentDriver;
     public static LatLng destinationLocationUser;
 
-    public static String userDestination;
+    public static String destinationAddressUser;
+
 
     private static final String API_KEY = "AIzaSyClP2CSvB0YMfpFwoujmCkFNeLaqn63NmQ";
     private static final String baseURL = "https://maps.googleapis.com";

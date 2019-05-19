@@ -121,7 +121,7 @@ public class MyFirebaseMessaging extends FirebaseMessagingService {
         Body body = new Gson().fromJson(jsonBody, Body.class);
         LatLng currentLocationUser = body.getCurrentLocationUser();
         Common.destinationLocationUser = body.getDestinationLocationUser();
-        Common.userDestination = body.getUserDestination();
+        Common.destinationAddressUser = body.getUserDestination();
 
         // jump to UserCallActivity to display information caller
         Intent intentCall = new Intent(getBaseContext(), UserCallActivity.class);
