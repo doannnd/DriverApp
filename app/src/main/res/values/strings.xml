@@ -143,4 +143,5 @@
     <string name="driver_restart">driver restart</string>
     <string name="state_working">working</string>
     <string name="cancel_message">Driver cancel booking from user</string>
+    <string name="network_not_connect">Network not connect</string>
 </resources>

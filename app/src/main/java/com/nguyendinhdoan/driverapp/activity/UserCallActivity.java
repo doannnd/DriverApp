@@ -35,6 +35,7 @@ import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseMessaging;
+import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -91,13 +92,15 @@ public class UserCallActivity extends AppCompatActivity implements View.OnClickL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_call);
 
-        setupBroadcastReceiver();
-        initViews();
-        setupUI();
-        addEvent();
+        if (CommonUtils.isNetworkConnected(this)) {
+            setupBroadcastReceiver();
+            initViews();
+            setupUI();
+            addEvent();
 
-        setupCountDownTimer();
-        updateStateDriverWorking();
+            setupCountDownTimer();
+            updateStateDriverWorking();
+        }
     }
 
     private void setupBroadcastReceiver() {

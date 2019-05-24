@@ -141,12 +141,16 @@ public class DriverActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_home);
 
-        initViews();
-        setupUI();
-        addEvents();
+        if (CommonUtils.isNetworkConnected(this)) {
+            initViews();
+            setupUI();
+            addEvents();
 
-        restartScreen();
-        updateStateDriverNotWorking();
+            restartScreen();
+            updateStateDriverNotWorking();
+        } else {
+            showSnackBar(getString(R.string.network_not_connect));
+        }
     }
 
     private void restartScreen() {

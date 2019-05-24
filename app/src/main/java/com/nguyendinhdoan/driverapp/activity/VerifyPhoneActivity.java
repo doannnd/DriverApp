@@ -68,10 +68,12 @@ public class VerifyPhoneActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_verify_phone);
 
-        FirebaseDatabase.getInstance().goOnline();
-        initViews();
-        setupUI();
-        addEvents();
+        if (CommonUtils.isNetworkConnected(this)) {
+            FirebaseDatabase.getInstance().goOnline();
+            initViews();
+            setupUI();
+            addEvents();
+        }
     }
 
     private void initViews() {

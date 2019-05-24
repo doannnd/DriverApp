@@ -79,6 +79,7 @@ import com.nguyendinhdoan.driverapp.remote.IFirebaseMessagingAPI;
 import com.nguyendinhdoan.driverapp.remote.IGoogleAPI;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseIdServices;
 import com.nguyendinhdoan.driverapp.services.MyFirebaseMessaging;
+import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -166,17 +167,23 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
     private String unitDistance;
     private String phoneNumberUser;
     private GeoLocation userLocation;
+    private int count = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tracking);
 
-        setupBroadcastReceiver();
-        initViews();
-        initGoogleMap();
-        setupUI();
-        addEvents();
+        if (CommonUtils.isNetworkConnected(this)) {
+            setupBroadcastReceiver();
+            initViews();
+            initGoogleMap();
+            setupUI();
+            addEvents();
+        } else {
+            showSnackBar(getString(R.string.network_not_connect));
+        }
+
     }
 
     private void setupBroadcastReceiver() {
@@ -416,7 +423,10 @@ public class TrackingActivity extends AppCompatActivity implements OnMapReadyCal
             Log.d(TAG, "unit distance: " + unitDistance);
 
             String userAddress = legObject.getString(DIRECTION_ADDRESS_KEY);
-            destinationTextView.setText(userAddress);
+            count ++;
+            if (count == 1) {
+                destinationTextView.setText(userAddress);
+            }
 
             // handle and decode direction json ==> string
             for (int i = 0; i < routes.length(); i++) {

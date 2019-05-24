@@ -19,6 +19,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.model.Driver;
+import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
 import java.util.Objects;
 
@@ -49,10 +50,12 @@ public class CarChargeActivity extends AppCompatActivity implements View.OnClick
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_car_charge);
 
-        initViews();
-        setupToolbar();
-        initDatabase();
-        addEvents();
+        if (CommonUtils.isNetworkConnected(this)) {
+            initViews();
+            setupToolbar();
+            initDatabase();
+            addEvents();
+        }
     }
 
     private void initDatabase() {

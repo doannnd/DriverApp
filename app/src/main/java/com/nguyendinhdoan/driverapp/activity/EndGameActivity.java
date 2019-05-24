@@ -20,6 +20,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.FirebaseDatabase;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.common.Common;
+import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
 public class EndGameActivity extends AppCompatActivity
         implements OnMapReadyCallback, View.OnClickListener {
@@ -47,10 +48,11 @@ public class EndGameActivity extends AppCompatActivity
         setContentView(R.layout.activity_end_game);
         FirebaseDatabase.getInstance().goOnline();
 
-
-        initViews();
-        setupUI();
-        addEvents();
+        if (CommonUtils.isNetworkConnected(this)) {
+            initViews();
+            setupUI();
+            addEvents();
+        }
     }
 
     private void addEvents() {

@@ -20,6 +20,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.nguyendinhdoan.driverapp.R;
 import com.nguyendinhdoan.driverapp.adapter.HistoryAdapter;
 import com.nguyendinhdoan.driverapp.model.History;
+import com.nguyendinhdoan.driverapp.utils.CommonUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +43,11 @@ public class HistoryActivity extends AppCompatActivity implements View.OnClickLi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        initViews();
-        setupData();
-        addEvents();
+        if (CommonUtils.isNetworkConnected(this)) {
+            initViews();
+            setupData();
+            addEvents();
+        }
     }
 
     private void addEvents() {
